@@ -1,0 +1,157 @@
+{% extends 'layout.twig' %}
+
+{% block title %}CGU & RGPD - Planning Bénévoles{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">
+            <i class="fa-solid fa-scale-balanced"></i> Conditions Générales d'Utilisation & RGPD
+        </h1>
+        <p class="text-muted" style="font-size: 15px;">
+            Consultez les conditions d'utilisation de la plateforme et nos engagements concernant la protection de vos données personnelles.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Menu latéral (ancres) -->
+    <div class="col-md-3 col-xs-12" style="margin-bottom: 20px;">
+        <div class="list-group" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px;">
+            <a href="#cgu" class="list-group-item active" style="font-weight: 600; background-color: #6366f1; border-color: #6366f1;">
+                <i class="fa-solid fa-file-contract"></i> Conditions d'Utilisation
+            </a>
+            <a href="#rgpd" class="list-group-item" style="font-weight: 600; color: #475569;">
+                <i class="fa-solid fa-shield-halved"></i> Protection des Données (RGPD)
+            </a>
+            <a href="#cgu-hebergement" class="list-group-item" style="font-weight: 600; color: #475569;">
+                <i class="fa-solid fa-server"></i> Hébergement & Sécurité
+            </a>
+            <a href="#cgu-contacts" class="list-group-item" style="font-weight: 600; color: #475569;">
+                <i class="fa-solid fa-address-book"></i> Nous contacter
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenu -->
+    <div class="col-md-9 col-xs-12">
+        <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); padding: 30px; line-height: 1.6; color: #334155;">
+            
+            <!-- Section CGU -->
+            <section id="cgu" style="margin-bottom: 40px;">
+                <h2 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
+                    1. Conditions Générales d'Utilisation (CGU)
+                </h2>
+                <p>
+                    Bienvenue sur la plateforme de planification des bénévoles. L'utilisation de cet outil implique votre acceptation pleine et entière des présentes conditions d'utilisation.
+                </p>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">1.1 Accès à la plateforme</h4>
+                <p>
+                    L'accès est réservé exclusivement aux bénévoles et aux membres de l'organisation. Votre compte d'accès est strictement personnel, confidentiel et incessible. Vous êtes responsable du maintien de la confidentialité de vos identifiants de connexion.
+                </p>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">1.2 Engagements du bénévole</h4>
+                <p>
+                    En vous inscrivant à des créneaux horaires d'activités (services), vous vous engagez à :
+                </p>
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
+                    <li>Respecter les horaires et le bon déroulement des missions choisies.</li>
+                    <li>Prévenir le plus tôt possible en cas d'empêchement (en vous déclarant absent sur l'outil ou en contactant un responsable).</li>
+                    <li>Utiliser l'outil de manière respectueuse et conforme à l'éthique de notre organisation.</li>
+                </ul>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">1.3 Rôle de l'administration</h4>
+                <p>
+                    Les responsables et administrateurs de la plateforme se réservent le droit de suspendre ou de désactiver temporairement votre compte d'accès en cas de non-respect de ces engagements ou pour des impératifs d'organisation et de sécurité.
+                </p>
+            </section>
+
+            <!-- Section RGPD -->
+            <section id="rgpd" style="margin-bottom: 40px; padding-top: 10px;">
+                <h2 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
+                    2. Protection des Données Personnelles (RGPD)
+                </h2>
+                <p>
+                    Conformément au Règlement Général sur la Protection des Données (RGPD) et à la Loi Informatique et Libertés, nous nous engageons à collecter et traiter vos données personnelles de manière transparente, confidentielle et sécurisée.
+                </p>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">2.1 Responsable du traitement</h4>
+                <p>
+                    Le traitement de vos données est effectué par l'organisation éditrice de ce service de gestion du bénévolat.
+                </p>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">2.2 Quelles données collectons-nous ?</h4>
+                <p>
+                    Dans le cadre de votre mission de bénévolat, les données suivantes sont collectées :
+                </p>
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
+                    <li><strong>Identité</strong> : Prénom et Nom de famille (pour l'affichage sur le planning et le pointage).</li>
+                    <li><strong>Identifiants</strong> : Nom d'utilisateur unique et mot de passe (stocké sous forme chiffrée irréversible).</li>
+                    <li><strong>Coordonnées</strong> (si renseignées) : Numéro de téléphone et adresse e-mail (utilisés pour les notifications et le support technique).</li>
+                    <li><strong>Données d'activité</strong> : Historique de vos inscriptions à des créneaux, groupes d'affectation et pointage de présence (présent, déclaré absent à l'avance, ou pointé absent).</li>
+                    <li><strong>Métadonnées d'utilisation</strong> : Date et heure de votre dernière connexion à la plateforme.</li>
+                    <li><strong>Logs de sécurité</strong> : Fichiers journaux système enregistrant vos connexions, votre adresse IP (anonymisée avec les derniers blocs masqués), et vos actions sensibles pour des raisons de cybersécurité.</li>
+                </ul>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">2.3 Pourquoi traitons-nous ces données (Finalités) ?</h4>
+                <p>
+                    Ces informations nous sont nécessaires pour :
+                </p>
+                <ul style="padding-left: 20px; margin-bottom: 15px;">
+                    <li>Organiser et planifier la présence des bénévoles lors des activités.</li>
+                    <li>Assurer la sécurité des accès et de la plateforme informatique (prévention des intrusions).</li>
+                    <li>Permettre aux responsables d'adapter les besoins logistiques en fonction du nombre de présents réels.</li>
+                    <li>Gérer et nettoyer les comptes inactifs ou obsolètes.</li>
+                </ul>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">2.4 Durée de conservation des données</h4>
+                <p>
+                    Vos données de profil sont conservées tant que vous êtes actif au sein de notre structure. En cas d'inactivité prolongée de votre compte pendant plus de **24 mois**, vos données personnelles (nom, prénom, coordonnées) sont supprimées ou anonymisées définitivement.
+                </p>
+                <p>
+                    La date de dernière connexion est écrasée à chaque nouvel accès. Les logs système de sécurité sont conservés pour une durée maximale de **12 mois** avant destruction automatique.
+                </p>
+
+                <h4 style="font-weight: bold; color: #1e293b; margin-top: 20px;">2.5 Vos droits</h4>
+                <p>
+                    Vous disposez d'un droit d'accès, de rectification et d'effacement de vos données personnelles, ainsi que d'un droit de limitation de leur traitement. Pour exercer ces droits ou pour toute question relative au traitement de vos données, vous pouvez contacter un responsable de l'association ou soumettre un ticket via la page de <strong>Support</strong>.
+                </p>
+            </section>
+
+            <!-- Section Hébergement -->
+            <section id="cgu-hebergement" style="margin-bottom: 40px; padding-top: 10px;">
+                <h2 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
+                    3. Hébergement & Sécurité
+                </h2>
+                <p>
+                    La plateforme est hébergée sur des serveurs sécurisés situés au sein de l'Union européenne. Nous appliquons des mesures de sécurité rigoureuses pour éviter l'altération, la perte ou l'accès non autorisé à vos données (hachage des mots de passe en <code>BCRYPT</code>, protocoles de transfert chiffrés, restriction des accès aux fichiers sensibles via <code>.htaccess</code>, etc.).
+                </p>
+            </section>
+
+            <!-- Section Contacts -->
+            <section id="cgu-contacts" style="padding-top: 10px;">
+                <h2 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;">
+                    4. Contacts & Réclamations
+                </h2>
+                <p>
+                    Si vous estimez, après nous avoir contactés, que vos droits Informatique et Libertés ne sont pas respectés, vous pouvez adresser une réclamation auprès de la CNIL (Commission Nationale de l'Informatique et des Libertés - <a href="https://www.cnil.fr" target="_blank">www.cnil.fr</a>).
+                </p>
+            </section>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Petite interaction JS pour activer le bon élément dans la liste latérale lors du clic
+    $(document).ready(function() {
+        $('.list-group-item').on('click', function() {
+            $('.list-group-item').removeClass('active').css('color', '#475569').css('background-color', '');
+            $(this).addClass('active').css('color', '#ffffff').css('background-color', '#6366f1');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Configuration de l'affichage - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    .panel-heading {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    
+    .panel-heading a.btn {
+        width: 100%;
+        text-align: center;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+    
+    .panel-body {
+        padding: 15px !important;
+    }
+    
+    .form-group label {
+        font-size: 13px;
+    }
+    
+    .btn-block {
+        height: 45px !important;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Configuration de l'affichage</h1>
+        <p class="text-muted" style="font-size: 15px;">Configurez la bannière d'information et le nombre de jours visibles sur la page d'accueil.</p>
+    </div>
+</div>
+
+{% if success %}
+    <div class="alert alert-success" role="alert">
+        <i class="fa-solid fa-circle-check"></i> {{ success }}
+    </div>
+{% endif %}
+
+{% if error %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+{% endif %}
+
+<div class="row">
+    {# Colonne de gauche : Configuration de l'accueil #}
+    <div class="col-md-6">
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
+                <i class="fa-solid fa-sliders text-success" style="margin-right: 5px;"></i> Configuration de l'accueil
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                    Contrôlez le nombre de jours glissants affichés à l'avance pour les bénévoles sur la page d'accueil.
+                </p>
+                <form action="{{ path('admin.settings.update_days') }}" method="POST" style="margin: 0;">
+                    <div class="form-group">
+                        <label for="homeDaysCountInput">Nombre de jours à afficher *</label>
+                        <div class="input-group">
+                            <input type="number" name="home_days_count" id="homeDaysCountInput" value="{{ homeDaysCount }}" class="form-control" min="1" max="365" required style="height: 40px;">
+                            <span class="input-group-addon">jours</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block" style="height: 40px; background-color: #10b981; border-color: #10b981; font-weight: 600; transition: background-color 0.2s;">
+                        <i class="fa-solid fa-floppy-disk"></i> Enregistrer la configuration
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Colonne de droite : Bannière d'information #}
+    <div class="col-md-6">
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
+                <i class="fa-solid fa-bullhorn text-primary" style="margin-right: 5px;"></i> Bannière globale d'information
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                    Affichez un message important (maintenance, travaux, annonce urgente) en haut de toutes les pages de l'application.
+                </p>
+                <form action="{{ path('admin.settings.update_banner') }}" method="POST" style="margin: 0;">
+                    <div class="checkbox" style="margin-top: 0; margin-bottom: 15px;">
+                        <label style="font-weight: bold; color: #1e293b;">
+                            <input type="checkbox" name="banner_active" value="1" {% if bannerActive %}checked{% endif %}> Activer l'affichage de la bannière
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label for="bannerMessageInput" style="color: #475569; font-weight: 600; margin-bottom: 5px;">Message (HTML autorisé) *</label>
+                        <textarea name="banner_message" id="bannerMessageInput" class="form-control" rows="3" placeholder="Ex: Une maintenance est planifiée ce soir à 20h00..." style="resize: vertical; font-size: 13px;">{{ bannerMessage }}</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="bannerTypeSelect" style="color: #475569; font-weight: 600; margin-bottom: 5px;">Style / Type de message *</label>
+                        <select name="banner_type" id="bannerTypeSelect" class="form-control" style="height: 40px;">
+                            <option value="info" {% if bannerType == 'info' %}selected{% endif %}>Information (Bleu)</option>
+                            <option value="warning" {% if bannerType == 'warning' %}selected{% endif %}>Alerte / Attention (Jaune)</option>
+                            <option value="critical" {% if bannerType == 'critical' %}selected{% endif %}>Critique / Important (Rouge)</option>
+                            <option value="success" {% if bannerType == 'success' %}selected{% endif %}>Succès / Résolu (Vert)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="height: 40px; background-color: #6366f1; border-color: #6366f1; font-weight: 600; transition: background-color 0.2s;">
+                        <i class="fa-solid fa-floppy-disk"></i> Mettre à jour la bannière
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

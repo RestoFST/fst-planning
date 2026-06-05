@@ -1,0 +1,82 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Notes de mise à jour (Changelog) - Planning Bénévoles{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">
+            <i class="fa-solid fa-clock-rotate-left"></i> Notes de mise à jour (Changelog)
+        </h1>
+        <p class="text-muted" style="font-size: 15px;">
+            Retrouvez l'historique des évolutions, nouvelles fonctionnalités et correctifs apportés à l'application.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        
+        <!-- Version 2.1.0 -->
+        <div hidden style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); padding: 25px; margin-bottom: 30px; position: relative;">
+            <span class="label label-primary" style="font-size: 13px; padding: 6px 12px; background-color: #6366f1; font-weight: bold; position: absolute; top: 25px; right: 25px;">v2.1.0</span>
+            
+            <h3 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 5px;">Mise à jour majeure : Optimisations & Expérience utilisateur</h3>
+            <span class="text-muted" style="font-size: 13px; display: block; margin-bottom: 20px;"><i class="fa-regular fa-calendar"></i> Juillet 2026</span>
+            
+            <hr style="border-top: 1px solid #f1f5f9; margin: 15px 0;">
+
+            <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 12px;"><i class="fa-solid fa-list-check text-indigo" style="color: #6366f1;"></i> Historique & Inscriptions</h4>
+            <ul style="padding-left: 20px; line-height: 1.6; color: #475569; font-size: 14px; margin-bottom: 20px;">
+                <li><strong>Filtres de recherche avancés</strong> : Ajout de menus déroulants permettant de filtrer les inscriptions de la page d'historique par activité spécifique et par statut de présence (présent, absent, en attente).</li>
+                <li><strong>Distinction de l'absence</strong> : L'historique indique désormais clairement si un bénévole s'est <em>déclaré absent</em> à l'avance ou s'il a été <em>pointé absent</em> lors de l'activité.</li>
+                <li><strong>Export CSV dynamique</strong> : L'export CSV respecte à présent les filtres appliqués à la liste de l'historique (activité, présence, dates, bénévole).</li>
+            </ul>
+
+            <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 12px;"><i class="fa-solid fa-people-group text-success" style="color: #10b981;"></i> Gestion des Groupes</h4>
+            <ul style="padding-left: 20px; line-height: 1.6; color: #475569; font-size: 14px; margin-bottom: 20px;">
+                <li><strong>Actions en AJAX</strong> : L'ajout et le retrait de bénévoles au sein d'un groupe s'effectuent dorénavant de manière instantanée, en arrière-plan, évitant tout rechargement fastidieux de la page.</li>
+                <li><strong>Tri intelligent</strong> : Les membres d'un groupe sont désormais classés par ordre alphabétique de leur prénom pour faciliter la lecture.</li>
+            </ul>
+
+            <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 12px;"><i class="fa-solid fa-desktop text-warning" style="color: #f59e0b;"></i> Accueil & Affichage</h4>
+            <ul style="padding-left: 20px; line-height: 1.6; color: #475569; font-size: 14px; margin-bottom: 20px;">
+                <li><strong>Accessibilité améliorée (tags ARIA)</strong> : Intégration de balises et attributs ARIA pour l'accessibilité web (lecteurs d'écran) sur la page d'accueil, la page de connexion et la page de réinitialisation de mot de passe.</li>
+                <li><strong>Design entièrement responsive</strong> : Optimisation de l'affichage sur smartphone et tablette de la page d'accueil (en-tête du planning quotidien et boutons d'inscription) avec des actions sur toute la largeur et une mise en page fluide.</li>
+                <li><strong>Lien vers le dépôt GitHub</strong> : Ajout de boutons dans la barre de navigation et le footer redirigeant directement vers le dépôt GitHub public du projet (RestoFST/fst-planning).</li>
+                <li><strong>Export de planning Webcal/iCal & Google Agenda</strong> : Synchronisez vos créneaux d'activités actifs en temps réel dans votre application de calendrier préférée (Apple Calendar, Outlook, etc.) ou en un clic sur Google Agenda via un lien d'abonnement privé généré depuis votre page de Profil.</li>
+                <li><strong>Tri des bénévoles par présence</strong> : Les bénévoles s'étant déclarés absents à l'avance pour une activité sont désormais regroupés et affichés tout en bas de la liste d'inscrits sur le créneau.</li>
+                <li><strong>Masquage des créneaux passés</strong> : Pour la journée en cours, les créneaux d'inscription dont l'heure de fin est dépassée sont automatiquement masqués de la page d'accueil.</li>
+                <li><strong>Synchronisation horaire</strong> : Correction et synchronisation globale du fuseau horaire du serveur (PHP/MySQL) configuré sur Europe/Paris.</li>
+            </ul>
+
+            <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 12px;"><i class="fa-solid fa-shield-halved text-danger" style="color: #ef4444;"></i> Architecture & Sécurité</h4>
+            <ul style="padding-left: 20px; line-height: 1.6; color: #475569; font-size: 14px; margin-bottom: 0;">
+                <li><strong>Notifications Push Web & Alertes de pointage</strong> : Intégration des événements push et clic sur notification dans le Service Worker, avec création d'une table `push_subscriptions` et d'une route API sécurisée. L'application génère automatiquement sa paire de clés VAPID avec OpenSSL et envoie un push en temps réel aux bénévoles dès qu'ils sont pointés présents ou absents.</li>
+                <li><strong>Sécurité des doublons CSV</strong> : L'importation CSV de bénévoles ignore et saute ("skip") automatiquement les lignes qui correspondent à un utilisateur déjà existant en base de données (soit par son identifiant, soit par son nom et prénom), afin d'éviter tout doublon ou conflit.</li>
+                <li><strong>Validation des CGU à la création</strong> : Ajout d'une case à cocher obligatoire certifiant que le bénévole a accepté les CGU et la politique de protection des données (RGPD) lors de la création manuelle de son compte.</li>
+                <li><strong>Suivi de connexion</strong> : Ajout d'une colonne *Dernière connexion* dans le tableau des bénévoles pour savoir exactement quand chaque compte s'est connecté pour la dernière fois sur la plateforme.</li>
+                <li><strong>Désactivation/Réactivation de comptes</strong> : Possibilité de désactiver temporairement un compte bénévole depuis la console d'administration, bloquant ainsi sa connexion et sa reconnexion automatique, et déconnectant sa session active immédiatement.</li>
+                <li><strong>Simplification des rôles</strong> : Remplacement complet de la structure des rôles au format JSON (tableau complexe) par un stockage textuel unique (`role` string) améliorant la maintenabilité et la rapidité du système d'autorisation.</li>
+                <li><strong>Support DB_PREFIX</strong> : L'ensemble de la base de données supporte dorénavant les préfixes de table dynamiques (`DB_PREFIX` dans le `.env`).</li>
+                <li><strong>Script d'installation & de migration</strong> : Création d'un assistant web d'installation (`install.php`) et d'un exécuteur de migrations (`migrate.php`) sécurisés pour faciliter le déploiement sur hébergement mutualisé.</li>
+            </ul>
+        </div>
+
+        <!-- Version 1.0.0 -->
+        <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); padding: 25px; margin-bottom: 30px; position: relative; opacity: 0.85;">
+            <span class="label label-default" style="font-size: 13px; padding: 6px 12px; background-color: #64748b; font-weight: bold; position: absolute; top: 25px; right: 25px;">v1.0.0</span>
+            
+            <h3 style="font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 5px;">Version Initiale</h3>
+            <span class="text-muted" style="font-size: 13px; display: block; margin-bottom: 20px;"><i class="fa-regular fa-calendar"></i> Juin 2026</span>
+            
+            <hr style="border-top: 1px solid #f1f5f9; margin: 15px 0;">
+
+            <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+                Lancement de la plateforme de planification des bénévoles avec gestion des comptes utilisateurs, inscriptions aux créneaux horaires des activités, pointage de présence en temps réel, restrictions par groupes, et console d'administration.
+            </p>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

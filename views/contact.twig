@@ -1,0 +1,104 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Bugs & Suggestions - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    .panel-body {
+        padding: 20px 15px !important;
+    }
+    
+    .btn-block-mobile {
+        width: 100% !important;
+        height: 45px !important;
+        font-size: 14px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-md-8 col-md-offset-2">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Bugs & Suggestions</h1>
+        <p class="text-muted" style="font-size: 15px;">Un problème à signaler ou une idée d'amélioration pour le planning ?</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                <i class="fa-solid fa-circle-check"></i> {{ success }}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 40px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
+                <i class="fa-solid fa-lightbulb text-primary" style="margin-right: 5px;"></i> Soumettre un retour
+            </div>
+            
+            <div class="panel-body" style="padding: 25px 30px;">
+                <form action="{{ path('contact.submit') }}" method="POST" style="margin: 0;">
+                    
+
+
+                    <!-- Type de retour (Bug ou Idée) -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="contactType" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Type de retour *</label>
+                        <select id="contactType" name="type" class="form-control" style="height: 40px;" required>
+                            <option value="bug">🐞 Signaler un bug / problème technique</option>
+                            <option value="idee">💡 Suggérer une idée / amélioration / fonctionnalité</option>
+                        </select>
+                    </div>
+
+                    <!-- Sujet -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="contactSubject" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Sujet résumé *</label>
+                        
+                            <input type="text" 
+                                   id="contactSubject" 
+                                   name="subject" 
+                                   placeholder="Ex: Le bouton X ne s'affiche pas sur mobile, Ajouter une option Y..." 
+                                   class="form-control" 
+                                   required 
+                                   style="height: 40px;">
+
+                    </div>
+
+                    <!-- Message -->
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label for="contactMessage" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Description détaillée *</label>
+                        <textarea id="contactMessage" 
+                                  name="message" 
+                                  rows="6" 
+                                  placeholder="Décrivez précisément le bug rencontré (avec étapes pour le reproduire) ou les détails de votre idée d'amélioration..." 
+                                  class="form-control" 
+                                  required 
+                                  style="resize: vertical; font-size: 14px;"></textarea>
+                    </div>
+
+                    <div style="border-top: 1px solid #f1f5f9; padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <a href="{{ path('index') }}" class="btn btn-default btn-lg btn-block-mobile" style="font-size: 14px; font-weight: 600; height: 44px; display: inline-flex; align-items: center; justify-content: center;">
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg btn-block-mobile" style="background-color: #6366f1; border-color: #6366f1; font-weight: 600; font-size: 14px; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fa-solid fa-paper-plane"></i> Envoyer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

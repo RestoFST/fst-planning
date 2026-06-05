@@ -1,0 +1,28 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Planning Benevoles//Calendar//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Planning Bénévoles
+X-WR-TIMEZONE:Europe/Paris
+{% for app in appointments %}
+BEGIN:VEVENT
+UID:appointment-{{ app.appointment_id }}@planning-benevoles.fr
+DTSTAMP:{{ now|date('Ymd\\THis\\Z', 'UTC') }}
+DTSTART;TZID=Europe/Paris:{{ (app.date ~ ' ' ~ app.start_time)|date('Ymd\\THis') }}
+DTEND;TZID=Europe/Paris:{{ (app.date ~ ' ' ~ app.end_time)|date('Ymd\\THis') }}
+SUMMARY:{{ app.service_name }}
+{% set desc = app.service_description|default('Aucune description.') %}
+{% if app.attendees is not empty %}
+{% set desc = desc ~ '\\n\\nAutres participants :\\n' %}
+{% for att in app.attendees %}
+{% set desc = desc ~ '- ' ~ att.firstname ~ ' ' ~ att.name ~ '\\n' %}
+{% endfor %}
+{% endif %}
+DESCRIPTION:{{ desc|replace({"\\r\\n": "\\n", "\\n": "\\n", "\\r": "\\n", ",": "\\,", ";": "\\;"}) }}
+{% for att in app.attendees %}
+ATTENDEE;CN="{{ att.firstname }} {{ att.name }}";ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:no-reply@planning-benevoles.fr
+{% endfor %}
+END:VEVENT
+{% endfor %}
+END:VCALENDAR

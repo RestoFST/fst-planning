@@ -1,0 +1,391 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Pointage Bénévoles - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    /* Sélecteur de date */
+    #dateForm {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px !important;
+        width: 100%;
+    }
+    #dateForm .form-group {
+        width: 100%;
+        margin-bottom: 0 !important;
+    }
+    #dateForm .btn-group {
+        display: flex;
+        width: 100%;
+    }
+    #dateForm .btn-group button {
+        flex: 1;
+    }
+
+    /* Header du panel */
+    .panel-heading {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    .panel-heading .panel-title {
+        width: 100%;
+    }
+
+    /* Rendre la table responsive par empilement */
+    .pointage-table, 
+    .pointage-table thead, 
+    .pointage-table tbody, 
+    .pointage-table tr, 
+    .pointage-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .pointage-table thead {
+        display: none; /* Masquer les en-têtes de table sur mobile */
+    }
+    
+    .pointage-table tr {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 15px 10px !important;
+        position: relative;
+    }
+    
+    .pointage-table td {
+        padding: 6px 0 !important;
+        border: none !important;
+        text-align: left !important;
+    }
+    
+    /* Colonne nom de bénévole */
+    .pointage-table td:nth-child(1) {
+        font-size: 16px;
+        color: #1e293b;
+    }
+    
+    /* Colonne Statut */
+    .pointage-table td:nth-child(2) {
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+    
+    /* Colonne Actions de pointage */
+    .pointage-table td:nth-child(3) {
+        text-align: left !important;
+        margin-top: 5px;
+    }
+    
+    .pointage-table td:nth-child(3) div {
+        display: flex !important;
+        width: 100%;
+        gap: 8px !important;
+    }
+    
+    .pointage-table td:nth-child(3) form {
+        flex: 1;
+    }
+    
+    .pointage-table td:nth-child(3) button {
+        width: 100%;
+        height: 42px; /* Boutons plus grands sur mobile */
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Pied de page du panel (Inscription rapide) */
+    .panel-footer form {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+    .panel-footer .form-group {
+        width: 100%;
+        min-width: 0 !important;
+    }
+    .panel-footer button {
+        width: 100%;
+        height: 40px !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-md-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Pointage des Bénévoles</h1>
+        <p class="text-muted" style="font-size: 15px;">Sélectionnez une date pour effectuer le pointage des présences pour chaque créneau.</p>
+    </div>
+</div>
+
+<div id="js-alert-container">
+    {% if success %}
+        <div class="alert alert-success" role="alert">
+            <i class="fa-solid fa-circle-check"></i> {{ success }}
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+        </div>
+    {% endif %}
+</div>
+
+{# Sélecteur de date (Bootstrap 3 Form Inline) #}
+<div class="well" style="background-color: #f8fafc; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 30px;">
+    <form id="dateForm" action="{{ path('admin.pointage') }}" method="GET" class="form-inline" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; margin: 0;">
+        <div class="form-group" style="margin-bottom: 0; min-width: 250px; flex-grow: 1;">
+            <label for="dateSelect" style="display: block; margin-bottom: 5px;">Sélectionner une date</label>
+            <input type="date" id="dateSelect" name="date" value="{{ dateSelectionnee }}" class="form-control" style="width: 100%; height: 40px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <div class="btn-group" role="group" aria-label="Navigation">
+                <button type="button" class="btn btn-default" id="btnPrev" style="height: 40px;"><i class="fa-solid fa-chevron-left"></i> Précédent</button>
+                <button type="button" class="btn btn-default" id="btnToday" style="height: 40px;">Aujourd'hui</button>
+                <button type="button" class="btn btn-default" id="btnNext" style="height: 40px;">Suivant <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{# Liste des créneaux de la date choisie #}
+<div class="row">
+    <div class="col-md-12" id="pointage-results-container">
+        {% include 'admin/_pointage_list.twig' with {
+            'creneaux': creneaux,
+            'dateSelectionnee': dateSelectionnee,
+            'dateSelectionneeFormatee': dateSelectionneeFormatee
+        } %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dateInput = document.getElementById('dateSelect');
+    const resultsContainer = document.getElementById('pointage-results-container');
+    const alertContainer = document.getElementById('js-alert-container');
+    const allUsers = {{ allUsers|json_encode|raw }};
+
+    function showNotification(message, type) {
+        if (!alertContainer) return;
+        const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type}" role="alert">
+                <i class="fa-solid ${icon}"></i> ${message}
+            </div>
+        `;
+        // Auto-clean after 4 seconds
+        setTimeout(() => {
+            alertContainer.innerHTML = '';
+        }, 4000);
+    }
+
+    function loadPointageData(dateStr, updateHistory = true) {
+        if (!dateStr) return;
+        
+        resultsContainer.style.opacity = '0.5';
+        
+        fetch(`{{ path('admin.pointage') }}?date=${encodeURIComponent(dateStr)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            }
+            throw new Error('Erreur lors du chargement des données.');
+        })
+        .then(html => {
+            resultsContainer.innerHTML = html;
+            resultsContainer.style.opacity = '1';
+            
+            if (updateHistory) {
+                history.replaceState(null, '', `?date=${encodeURIComponent(dateStr)}`);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur AJAX:', error);
+            resultsContainer.style.opacity = '1';
+        });
+    }
+
+    // Gestion du bouton précédent/suivant du navigateur (bouton Retour)
+    window.addEventListener('popstate', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        if (dateParam) {
+            dateInput.value = dateParam;
+            loadPointageData(dateParam, false);
+        }
+    });
+
+    document.getElementById('btnPrev').addEventListener('click', function() {
+        let currentVal = dateInput.value;
+        if (!currentVal) return;
+        let date = new Date(currentVal);
+        date.setDate(date.getDate() - 1);
+        let yyyy = date.getFullYear();
+        let mm = String(date.getMonth() + 1).padStart(2, '0');
+        let dd = String(date.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+        loadPointageData(dateInput.value);
+    });
+
+    document.getElementById('btnToday').addEventListener('click', function() {
+        let date = new Date();
+        let yyyy = date.getFullYear();
+        let mm = String(date.getMonth() + 1).padStart(2, '0');
+        let dd = String(date.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+        loadPointageData(dateInput.value);
+    });
+
+    document.getElementById('btnNext').addEventListener('click', function() {
+        let currentVal = dateInput.value;
+        if (!currentVal) return;
+        let date = new Date(currentVal);
+        date.setDate(date.getDate() + 1);
+        let yyyy = date.getFullYear();
+        let mm = String(date.getMonth() + 1).padStart(2, '0');
+        let dd = String(date.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+        loadPointageData(dateInput.value);
+    });
+
+    dateInput.addEventListener('change', function() {
+        loadPointageData(dateInput.value);
+    });
+
+    // Interception des formulaires de pointage et inscription en AJAX
+    resultsContainer.addEventListener('submit', function(e) {
+        if (e.target && e.target.tagName === 'FORM') {
+            const form = e.target;
+            
+            // Si le bénévole s'était déclaré absent, on demande confirmation
+            if (form.getAttribute('data-declared-absent') === 'true') {
+                const name = form.getAttribute('data-volunteer-name');
+                if (!confirm(`Attention : ${name} s'est déclaré absent. Êtes-vous sûr de vouloir le marquer présent ?`)) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+            
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            resultsContainer.style.opacity = '0.5';
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                return response.json().then(data => ({
+                    status: response.status,
+                    data: data
+                }));
+            })
+            .then(({ status, data }) => {
+                if (status >= 200 && status < 300) {
+                    showNotification(data.success, 'success');
+                    loadPointageData(dateInput.value);
+                } else {
+                    showNotification(data.error || "Une erreur est survenue.", 'danger');
+                    resultsContainer.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur AJAX:', error);
+                showNotification("Erreur de connexion au serveur.", 'danger');
+                resultsContainer.style.opacity = '1';
+            });
+        }
+    });
+
+    document.addEventListener("input", function(e) {
+        if (e.target && e.target.classList.contains('volunteer-search-input')) {
+            const input = e.target;
+            const aid = input.getAttribute("data-aid");
+            const suggestionsBox = document.getElementById(`suggestions-${aid}`);
+            const suggestionsList = suggestionsBox.querySelector("ul");
+            const uidInput = document.getElementById(`uid-${aid}`);
+            const btnSubmit = document.getElementById(`btn-submit-${aid}`);
+            const inscritsIds = JSON.parse(input.getAttribute("data-inscrits") || "[]");
+            
+            const query = input.value.trim().toLowerCase();
+            
+            if (query.length < 1) {
+                suggestionsBox.style.display = "none";
+                uidInput.value = "";
+                btnSubmit.disabled = true;
+                return;
+            }
+
+            const matches = allUsers.filter(u => {
+                const fullName = (u.firstname + " " + u.name).toLowerCase();
+                return fullName.includes(query) && !inscritsIds.includes(parseInt(u.id));
+            });
+
+            suggestionsList.innerHTML = "";
+            
+            if (matches.length === 0) {
+                const li = document.createElement("li");
+                li.className = "disabled";
+                li.innerHTML = '<a href="#" onclick="event.preventDefault();" style="color: #64748b; font-style: italic;">Aucun bénévole disponible</a>';
+                suggestionsList.appendChild(li);
+            } else {
+                matches.forEach(u => {
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    a.href = "#";
+                    a.innerHTML = `<i class="fa-solid fa-user" style="margin-right: 8px; font-size: 11px;"></i> <strong>${u.firstname}</strong> ${u.name}`;
+                    a.addEventListener("click", function(evt) {
+                        evt.preventDefault();
+                        input.value = `${u.firstname} ${u.name}`;
+                        uidInput.value = u.id;
+                        btnSubmit.disabled = false;
+                        suggestionsBox.style.display = "none";
+                    });
+                    li.appendChild(a);
+                    suggestionsList.appendChild(li);
+                });
+            }
+            suggestionsBox.style.display = "block";
+        }
+    });
+
+    document.addEventListener("click", function(e) {
+        const openedSuggestions = document.querySelectorAll(".volunteer-suggestions-box");
+        openedSuggestions.forEach(box => {
+            const aid = box.id.replace("suggestions-", "");
+            const input = document.getElementById(`search-${aid}`);
+            if (input && e.target !== input && !box.contains(e.target)) {
+                box.style.display = "none";
+            }
+        });
+    });
+
+    document.addEventListener("focusin", function(e) {
+        if (e.target && e.target.classList.contains('volunteer-search-input')) {
+            const input = e.target;
+            const aid = input.getAttribute("data-aid");
+            const suggestionsBox = document.getElementById(`suggestions-${aid}`);
+            const suggestionsList = suggestionsBox.querySelector("ul");
+            if (input.value.trim().length >= 1 && suggestionsList.children.length > 0) {
+                suggestionsBox.style.display = "block";
+            }
+        }
+    });
+</script>
+{% endblock %}

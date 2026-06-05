@@ -1,0 +1,205 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Logs Système & Flux RSS - Administration{% endblock %}
+
+{% block head %}
+<style>
+    /* Style personnalisé pour la console de logs et l'interface */
+    .terminal-container {
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        border: 1px solid #1e293b;
+        background-color: #0f172a;
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    .terminal-header {
+        background-color: #1e293b;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #334155;
+    }
+    .terminal-title {
+        color: #f8fafc;
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .terminal-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .terminal-dot.red { background-color: #ef4444; }
+    .terminal-dot.yellow { background-color: #f59e0b; }
+    .terminal-dot.green { background-color: #10b981; }
+    
+    .terminal-body {
+        padding: 0;
+        margin: 0;
+    }
+    .terminal-pre {
+        margin: 0;
+        background-color: #0f172a;
+        color: #38bdf8;
+        border: none;
+        border-radius: 0;
+        padding: 20px;
+        font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        font-size: 12px;
+        max-height: 550px;
+        overflow-y: scroll;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.6;
+    }
+    
+    /* Boutons et badges RSS */
+    .rss-card {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        margin-bottom: 25px;
+    }
+    .rss-header {
+        background-color: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: bold;
+        padding: 15px 20px;
+        font-size: 14px;
+        color: #1e293b;
+    }
+    .rss-body {
+        padding: 20px;
+    }
+    
+    .rss-url-well {
+        background-color: #fafaf9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        word-break: break-all;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .rss-badge {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .terminal-pre {
+            max-height: 350px !important;
+            font-size: 11px !important;
+            padding: 15px !important;
+        }
+        .terminal-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .terminal-header .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Journal de logs système & Flux RSS</h1>
+        <p class="text-muted" style="font-size: 15px;">Supervisez l'activité de l'application en temps réel et configurez des alertes à distance.</p>
+    </div>
+</div>
+
+{% if success %}
+    <div class="alert alert-success" role="alert">
+        <i class="fa-solid fa-circle-check"></i> {{ success }}
+    </div>
+{% endif %}
+
+{% if error %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+{% endif %}
+
+<div class="row">
+    {# Console de logs (Gros bloc principal à gauche) #}
+    <div class="col-md-8">
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-title">
+                    <span style="display: flex; gap: 6px;">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                    </span>
+                    <span style="margin-left: 10px; color: #94a3b8;"><i class="fa-solid fa-terminal"></i> terminal_app.log (300 dernières lignes)</span>
+                </div>
+                <a href="{{ path('admin.logs') }}" class="btn btn-primary btn-sm" style="background-color: #6366f1; border-color: #6366f1; font-weight: 600;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Rafraîchir les logs
+                </a>
+            </div>
+            <div class="terminal-body">
+                <pre class="terminal-pre">{{ logsContent }}</pre>
+            </div>
+        </div>
+    </div>
+
+    {# Accès RSS & Paramètres à droite #}
+    <div class="col-md-4">
+        <div class="rss-card">
+            <div class="rss-header">
+                <i class="fa-solid fa-rss text-warning" style="margin-right: 5px;"></i> Flux RSS d'Alerte Sécurisé
+            </div>
+            <div class="rss-body">
+                <span class="rss-badge"><i class="fa-solid fa-bell"></i> Notifications</span>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                    Abonnez-vous à distance aux alertes critiques (logs de niveau <strong>Warning, Error, Critical</strong>) avec votre agrégateur préféré (ex: Feedly, Thunderbird).
+                </p>
+                
+                <div class="rss-url-well">
+                    <strong style="font-size: 11px; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 5px;">Lien d'abonnement privé :</strong>
+                    <a href="{{ path('admin.logs.rss') }}?token={{ rssToken }}" target="_blank" style="font-size: 12px; font-family: monospace; font-weight: bold; color: #ea580c; text-decoration: none;">
+                        <i class="fa-solid fa-link"></i> Flux RSS des Logs
+                    </a>
+                </div>
+
+                <form action="{{ path('admin.rss.reset') }}" method="POST" onsubmit="return confirm('Attention : générer un nouveau token révoquera immédiatement l\'accès à l\'ancienne URL pour tous les clients RSS configurés. Souhaitez-vous continuer ?');">
+                    <button type="submit" class="btn btn-warning btn-block" style="font-weight: 600;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Réinitialiser le token RSS
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Faire défiler automatiquement les logs vers le bas au chargement de la page
+    document.addEventListener("DOMContentLoaded", function() {
+        const logPre = document.querySelector('.terminal-pre');
+        if (logPre) {
+            logPre.scrollTop = logPre.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

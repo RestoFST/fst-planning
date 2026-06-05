@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Métas PWA pour iOS (Apple) -->                                                                                                                
+    <meta name="apple-mobile-web-app-capable" content="yes">                                                                                           
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">                                                                    
+    <meta name="apple-mobile-web-app-title" content="Planning Bénévoles">                                                                              
+    <link rel="apple-touch-icon" href="/planning/dist/apple-touch-icon.png">
+
+    <title>{% block title %}Gestion des Créneaux Bénévoles{% endblock %}</title>
+    
+    <link rel="manifest" href="/planning/dist/app.webmanifest">
+    <link rel="icon" type="image/png" href="/planning/dist/favicon.png">    
+    <!-- Bootstrap 3.4.1 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flatpickr (Timepicker with clock/time selector) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding-bottom: 60px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        main {
+            flex: 1;
+        }
+
+        .navbar-inverse {
+            background-color: #1e293b;
+            border-color: #0f172a;
+        }
+
+        .navbar-inverse .navbar-brand {
+            color: #f8fafc;
+            font-weight: bold;
+        }
+
+        .navbar-inverse .navbar-brand:hover {
+            color: #38bdf8;
+        }
+
+        .navbar-inverse .navbar-nav > li > a {
+            color: #cbd5e1;
+        }
+
+        .navbar-inverse .navbar-nav > li > a:hover {
+            color: #f8fafc;
+        }
+
+        .navbar-inverse .navbar-nav > .active > a, 
+        .navbar-inverse .navbar-nav > .active > a:hover, 
+        .navbar-inverse .navbar-nav > .active > a:focus {
+            background-color: #0f172a;
+            color: #38bdf8;
+        }
+
+        .panel-primary {
+            border-color: #6366f1;
+        }
+
+        .panel-primary > .panel-heading {
+            background-color: #6366f1;
+            border-color: #6366f1;
+        }
+
+        footer {
+            background-color: #1e293b;
+            color: #94a3b8;
+            padding: 20px 0;
+            margin-top: auto;
+            border-top: 1px solid #0f172a;
+        }
+        @media (max-width: 768px) {
+            footer .footer-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px !important;
+            }
+        }
+
+        /* Styles responsives pour les cartes de service et la page d'accueil */
+        @media (max-width: 767px) {
+            /* En-tête des panels jours */
+            .panel-heading {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+            .panel-heading .label {
+                align-self: flex-start;
+            }
+            .panel-heading form {
+                width: 100%;
+            }
+            .panel-heading button {
+                width: 100%;
+                text-align: center;
+                padding: 6px 12px !important;
+                font-size: 13px !important;
+            }
+            
+            /* Cartes d'activité */
+            .thumbnail {
+                min-height: auto !important;
+                margin-bottom: 15px;
+            }
+            
+            /* Actions du bas de carte */
+            .service-card-actions {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                gap: 8px;
+            }
+            .service-card-actions form {
+                width: 100%;
+            }
+            .service-card-actions button,
+            .service-card-actions .btn {
+                width: 100% !important;
+                display: block !important;
+                text-align: center !important;
+                font-size: 13px !important;
+                padding: 8px 12px !important;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+
+    <nav class="navbar navbar-inverse navbar-static-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{{ path('index') }}">
+                    <i class="fa-solid fa-calendar-check"></i> Planning Bénévoles
+                </a>
+            </div>
+            
+            <div id="navbar" class="navbar-collapse collapse">
+                {% if app_user is defined and app_user is not null %}
+                    <ul class="nav navbar-nav">
+                        {% if app_user.role in ['admin', 'user', 'responsable'] %}
+                            <li>
+                                <a href="{{ path('index') }}"><i class="fa-solid fa-house"></i> Inscriptions</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if app_user.role in ['admin', 'accueil', 'responsable'] %}
+                            <li>
+                                <a href="{{ path('admin.pointage') }}"><i class="fa-solid fa-clipboard-user"></i> Pointage</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% if app_user.role in ['admin', 'responsable', 'user'] %}
+                            <li>
+                                <a href="{{ path('admin.registrations') }}"><i class="fa-solid fa-list-check"></i> Historique</a>
+                            </li>
+                        {% endif %}
+                        
+                        <li>
+                            <a href="{{ path('contact') }}"><i class="fa-solid fa-circle-question"></i> Support</a>
+                        </li>
+                        
+                        <li>
+                            <a href="{{ path('changelog') }}"><i class="fa-solid fa-clock-rotate-left"></i> Changelog</a>
+                        </li>
+                        
+
+                        {% if app_user.role in ['admin', 'responsable'] %}
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa-solid fa-gears"></i> Administration <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="{{ path('admin.users') }}"><i class="fa-solid fa-users-gear"></i> Gestion Bénévoles</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ path('admin.groups') }}"><i class="fa-solid fa-people-group"></i> Gestion Groupes</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ path('admin.activities') }}"><i class="fa-solid fa-shapes"></i> Gestion Activités</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ path('admin.holidays') }}"><i class="fa-solid fa-umbrella-beach"></i> Fermetures</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ path('admin.openings') }}"><i class="fa-solid fa-calendar-plus"></i> Ouvertures Exceptionnelles</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ path('admin.display_settings') }}"><i class="fa-solid fa-desktop"></i> Configuration de l'affichage</a>
+                                    </li>
+                                    {% if app_user.role == 'admin' %}
+                                         <li class="divider" role="separator"></li>
+                                         <li>
+                                             <a href="{{ path('admin.dashboard') }}"><i class="fa-solid fa-toolbox"></i> Console Admin</a>
+                                         </li>
+                                         <li>
+                                             <a href="{{ path('admin.logs') }}"><i class="fa-solid fa-terminal"></i> Logs</a>
+                                         </li>
+                                     {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="{{ path('profile') }}" style="padding-top: 15px; padding-bottom: 15px;" title="Mon Profil">
+                                <span class="label label-info" style="font-size: 12px; padding: 4px 8px; cursor: pointer;">
+                                    <i class="fa-solid fa-user-gear"></i> {{ app_user.firstname }} {{ app_user.name }}
+                                </span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ path('auth.logout') }}" title="Se déconnecter" style="padding-top: 15px; padding-bottom: 15px;">
+                                <i class="fa-solid fa-right-from-bracket text-danger"></i>
+                            </a>
+                        </li>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% if app_banner is defined and app_banner.active %}
+            {% set alertClass = 'alert-info' %}
+            {% set iconClass = 'fa-solid fa-circle-info' %}
+            {% if app_banner.type == 'warning' %}
+                {% set alertClass = 'alert-warning' %}
+                {% set iconClass = 'fa-solid fa-triangle-exclamation' %}
+            {% elseif app_banner.type == 'critical' %}
+                {% set alertClass = 'alert-danger' %}
+                {% set iconClass = 'fa-solid fa-circle-exclamation' %}
+            {% elseif app_banner.type == 'success' %}
+                {% set alertClass = 'alert-success' %}
+                {% set iconClass = 'fa-solid fa-circle-check' %}
+            {% endif %}
+            
+            <div class="alert {{ alertClass }}" role="alert" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 25px; padding: 15px 20px; font-size: 14px; font-weight: 500;">
+                <i class="{{ iconClass }}" style="margin-right: 8px; font-size: 16px; vertical-align: -1px;"></i>
+                {{ app_banner.message|raw }}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <p hidden style="margin: 0; font-weight: 500;">&copy; {{ "now"|date("Y") }} - Planning Bénévoles | <a href="{{ path('cgu') }}" style="color: #64748b; text-decoration: none; font-weight: 600; margin-left: 5px;"><i class="fa-solid fa-scale-balanced"></i> CGU & RGPD</a> | <a href="https://github.com/RestoFST/fst-planning" target="_blank" style="color: #64748b; text-decoration: none; font-weight: 600; margin-left: 5px;"><i class="fa-brands fa-github"></i> GitHub</a></p>
+                <p style="margin: 0; font-weight: 500;">v1.0.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- jQuery and Bootstrap 3.4.1 JS -->
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
+    
+    {% block scripts %}{% endblock %}
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/planning/sw.js')
+                .then(reg => console.log('Service Worker enregistré !', reg.scope))
+                .catch(err => console.warn('Erreur d\'enregistrement du Service Worker', err));
+        });
+    }
+    </script>
+</body>
+</html>

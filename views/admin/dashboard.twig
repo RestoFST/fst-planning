@@ -1,0 +1,157 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Console d'Administration - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    /* Header des panels flex */
+    .panel-heading {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    
+    .panel-heading a.btn {
+        width: 100%;
+        text-align: center;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+    
+    /* Pre logs */
+    pre {
+        max-height: 300px !important; /* Moins haut sur mobile pour laisser voir le reste */
+        font-size: 10px !important;
+        padding: 15px !important;
+    }
+    
+    /* Formulaires et contrôles */
+    .panel-body {
+        padding: 15px !important;
+    }
+    
+    .form-group label {
+        font-size: 13px;
+    }
+    
+    /* Inputs et boutons */
+    select, input, textarea {
+        height: 42px !important;
+    }
+    textarea {
+        height: auto !important;
+    }
+    
+    .btn-block {
+        height: 45px !important;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Console d'Administration</h1>
+        <p class="text-muted" style="font-size: 15px;">Outils d'administration système, conformité RGPD, gestion des accès distants et logs d'activité.</p>
+    </div>
+</div>
+
+{% if success %}
+    <div class="alert alert-success" role="alert">
+        <i class="fa-solid fa-circle-check"></i> {{ success }}
+    </div>
+{% endif %}
+
+{% if error %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+{% endif %}
+
+<div class="row">
+    {# Colonne de gauche : Outils RGPD #}
+    <div class="col-md-6">
+        
+        {# Section RGPD #}
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
+                <i class="fa-solid fa-shield-halved text-primary" style="margin-right: 5px;"></i> Export de données RGPD
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                    Conformément au RGPD (Droit à la portabilité), vous pouvez exporter l'intégralité des informations personnelles d'un bénévole (identité, rôles, contacts, historique complet de ses inscriptions et pointages de présence) au format standard JSON.
+                </p>
+                <form action="{{ path('admin.rgpd.export') }}" method="GET" target="_blank">
+                    <div class="form-group">
+                        <label for="rgpdUserSelect">Sélectionner le bénévole *</label>
+                        <select name="uid" id="rgpdUserSelect" class="form-control" required style="height: 40px;">
+                            <option value="" disabled selected>-- Choisir le bénévole --</option>
+                            {% for u in users %}
+                                <option value="{{ u.id }}">{{ u.name|upper }} {{ u.firstname }} ({{ u.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" style="height: 40px; background-color: #6366f1; border-color: #6366f1;">
+                        <i class="fa-solid fa-download"></i> Générer l'export RGPD (JSON)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    {# Colonne de droite : Maintenance #}
+    <div class="col-md-6">
+        
+        {# Section Maintenance de l'application #}
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
+                <i class="fa-solid fa-screwdriver-wrench text-danger" style="margin-right: 5px;"></i> Maintenance du site
+            </div>
+            <div class="panel-body" style="padding: 20px;">
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
+                    Statut actuel : 
+                    {% if maintenanceActive %}
+                        <span class="label label-danger" style="font-size: 12px; font-weight: 600;"><i class="fa-solid fa-circle-exclamation"></i> ACTIF</span>
+                    {% else %}
+                        <span class="label label-success" style="font-size: 12px; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> INACTIF</span>
+                    {% endif %}
+                </p>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">
+                    Le mode de maintenance globale s'active directement ci-dessous ou dans le fichier <code>.env</code> (variable <code>APP_MAINTENANCE</code>).
+                </p>
+                
+                {% if maintenanceActive %}
+                    <form action="{{ path('admin.settings.maintenance_disable') }}" method="POST" style="margin-bottom: 15px;">
+                        <button type="submit" class="btn btn-success btn-block" style="height: 40px; background-color: #10b981; border-color: #10b981; font-weight: 600;">
+                            <i class="fa-solid fa-power-off"></i> Désactiver la maintenance (Passer en ligne)
+                        </button>
+                    </form>
+                {% else %}
+                    <form action="{{ path('admin.settings.maintenance_bypass') }}" method="POST" style="margin-bottom: 15px;">
+                        <button type="submit" class="btn btn-danger btn-block" style="height: 40px; background-color: #ef4444; border-color: #ef4444; font-weight: 600;">
+                            <i class="fa-solid fa-cookie-bite"></i> Activer la maintenance & configurer mon accès
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if maintenanceSecret %}
+                    <div class="well well-sm" style="background-color: #fafaf9; border: 1px solid #e2e8f0; word-break: break-all; padding: 12px; margin-bottom: 0;">
+                        <strong style="font-size: 11px; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 5px;">URL de contournement à partager :</strong>
+                        <a href="{{ path('index') }}?bypass={{ maintenanceSecret }}" target="_blank" style="font-size: 11px; font-family: monospace; font-weight: bold; color: #475569;">
+                            {{ path('index') }}?bypass={{ maintenanceSecret }}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

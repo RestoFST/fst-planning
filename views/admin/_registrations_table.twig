@@ -1,0 +1,59 @@
+<div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+    <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
+        <i class="fa-solid fa-list-check text-primary" style="margin-right: 5px;"></i> 
+        {% if isSimpleUser %}
+            Mes participations enregistrées
+        {% elseif selectedUid == 'all' %}
+            Toutes les inscriptions enregistrées
+        {% else %}
+            Historique des inscriptions de l'utilisateur sélectionné
+        {% endif %}
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" style="margin-bottom: 0;">
+            <thead>
+                <tr style="color: #64748b; font-size: 12px; text-transform: uppercase;">
+                    <th style="padding: 12px 20px;">Date</th>
+                    {% if not isSimpleUser %}
+                        <th style="padding: 12px 20px;">Bénévole</th>
+                    {% endif %}
+                    <th style="padding: 12px 20px;">Activité</th>
+                    <th style="padding: 12px 20px;">Présence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                    <tr>
+                        <td style="padding: 12px 20px; font-weight: bold; color: #1e293b; vertical-align: middle;">
+                            {{ reg.date|date("d/m/Y") }}
+                        </td>
+                        {% if not isSimpleUser %}
+                            <td style="padding: 12px 20px; vertical-align: middle;">
+                                {{ reg.user_firstname }} {{ reg.user_name|upper }}
+                            </td>
+                        {% endif %}
+                        <td style="padding: 12px 20px; color: #475569; vertical-align: middle;">
+                            {{ reg.service_name }}
+                        </td>
+                        <td style="padding: 12px 20px; vertical-align: middle;">
+                            {% if reg.presence == 'present' %}
+                                <span class="label label-success" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Présent</span>
+                            {% elseif reg.presence == 'absent' %}
+                                <span class="label label-danger" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> Absent</span>
+                            {% else %}
+                                <span class="label label-warning" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-clock"></i> En attente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{% if isSimpleUser %}3{% else %}4{% endif %}" class="text-center text-muted" style="padding: 40px; font-style: italic;">
+                            Aucune inscription ou pointage enregistré dans cette sélection.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

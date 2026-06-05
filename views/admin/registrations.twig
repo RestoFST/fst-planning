@@ -1,0 +1,224 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Historique des Présences - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    /* Formulaire de filtres */
+    #filterForm {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 15px !important;
+        width: 100%;
+    }
+    #filterForm .form-group {
+        width: 100%;
+        margin-bottom: 0 !important;
+    }
+    #filterForm #btnExport {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Rendre la table responsive par empilement */
+    .registrations-table, 
+    .registrations-table thead, 
+    .registrations-table tbody, 
+    .registrations-table tr, 
+    .registrations-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .registrations-table thead {
+        display: none; /* Masquer les en-têtes de table sur mobile */
+    }
+    
+    .registrations-table tr {
+        border-bottom: 1px solid #e2e8f0;
+        padding: 15px 10px !important;
+        position: relative;
+    }
+    
+    .registrations-table td {
+        padding: 4px 0 !important;
+        border: none !important;
+        text-align: left !important;
+    }
+    
+    /* Première colonne (Date) */
+    .registrations-table td:first-child {
+        font-size: 15px;
+        color: #1e293b;
+        font-weight: 700;
+    }
+    
+    /* Colonnes du milieu (Bénévole, Activité) */
+    .registrations-table td:not(:first-child):not(:last-child) {
+        font-size: 14px;
+        color: #475569;
+    }
+    
+    /* Dernière colonne (Présence) */
+    .registrations-table td:last-child {
+        display: inline-block;
+        margin-top: 5px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-xs-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">
+            {% if isSimpleUser %}
+                Mon Historique d'Inscriptions
+            {% else %}
+                Historique des Inscriptions & Pointages
+            {% endif %}
+        </h1>
+        <p class="text-muted" style="font-size: 15px;">
+            {% if isSimpleUser %}
+                Retrouvez l'historique complet de vos inscriptions et de vos pointages de présence.
+            {% else %}
+                Historique complet des présences des bénévoles du centre.
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{# Barre d'outils et filtres #}
+<div class="well" style="background-color: #f8fafc; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 30px;">
+    <form id="filterForm" action="{{ path('admin.registrations') }}" method="GET" class="form-inline" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; margin: 0;">
+        
+        {% if not isSimpleUser %}
+            <div class="form-group" style="margin-bottom: 0; min-width: 180px; flex-grow: 1;">
+                <label for="userSelect" style="display: block; margin-bottom: 5px;">Bénévole</label>
+                <select id="userSelect" name="uid" class="form-control" style="width: 100%; height: 40px;">
+                    <option value="all" {% if selectedUid == 'all' %}selected{% endif %}>-- Tous les bénévoles --</option>
+                    {% for u in users %}
+                        <option value="{{ u.id }}" {% if selectedUid == u.id %}selected{% endif %}>
+                            {{ u.name|upper }} {{ u.firstname }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+
+        <div class="form-group" style="margin-bottom: 0; min-width: 150px; flex-grow: 1;">
+            <label for="serviceSelect" style="display: block; margin-bottom: 5px;">Activité</label>
+            <select id="serviceSelect" name="sid" class="form-control" style="width: 100%; height: 40px;">
+                <option value="all" {% if selectedSid == 'all' %}selected{% endif %}>-- Toutes les activités --</option>
+                {% for s in services %}
+                    <option value="{{ s.id }}" {% if selectedSid == s.id %}selected{% endif %}>
+                        {{ s.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0; min-width: 150px; flex-grow: 1;">
+            <label for="statusSelect" style="display: block; margin-bottom: 5px;">Présence</label>
+            <select id="statusSelect" name="status" class="form-control" style="width: 100%; height: 40px;">
+                <option value="all" {% if selectedStatus == 'all' %}selected{% endif %}>-- Tous les statuts --</option>
+                <option value="en_attente" {% if selectedStatus == 'en_attente' %}selected{% endif %}>En attente</option>
+                <option value="present" {% if selectedStatus == 'present' %}selected{% endif %}>Présent</option>
+                <option value="absent" {% if selectedStatus == 'absent' %}selected{% endif %}>Absent</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0; min-width: 130px; flex-grow: 1;">
+            <label for="dateDebutInput" style="display: block; margin-bottom: 5px;">Début</label>
+            <input type="date" id="dateDebutInput" name="date_debut" value="{{ dateDebut }}" class="form-control" style="width: 100%; height: 40px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0; min-width: 130px; flex-grow: 1;">
+            <label for="dateFinInput" style="display: block; margin-bottom: 5px;">Fin</label>
+            <input type="date" id="dateFinInput" name="date_fin" value="{{ dateFin }}" class="form-control" style="width: 100%; height: 40px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0; display: inline-flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ path('admin.registrations.export') }}?uid={{ selectedUid }}&date_debut={{ dateDebut }}&date_fin={{ dateFin }}&sid={{ selectedSid }}&status={{ selectedStatus }}" id="btnExport" class="btn btn-success" style="height: 40px; padding: 10px 20px; line-height: 20px; background-color: #10b981; border-color: #10b981; font-weight: 600;">
+                <i class="fa-solid fa-file-csv"></i> {% if isSimpleUser %}Exporter mon historique{% else %}Exporter (CSV){% endif %}
+            </a>
+        </div>
+    </form>
+</div>
+
+{# Tableau des inscriptions #}
+<div id="registrations-results-container">
+    {% include 'admin/_registrations_list.twig' with {
+        'registrations': registrations,
+        'isSimpleUser': isSimpleUser,
+        'selectedUid': selectedUid,
+        'selectedSid': selectedSid,
+        'selectedStatus': selectedStatus
+    } %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userSelect = document.getElementById('userSelect');
+        const serviceSelect = document.getElementById('serviceSelect');
+        const statusSelect = document.getElementById('statusSelect');
+        const dateDebutInput = document.getElementById('dateDebutInput');
+        const dateFinInput = document.getElementById('dateFinInput');
+        const resultsContainer = document.getElementById('registrations-results-container');
+        const btnExport = document.getElementById('btnExport');
+
+        function updateRegistrationsData() {
+            const uid = userSelect ? userSelect.value : 'all';
+            const sid = serviceSelect ? serviceSelect.value : 'all';
+            const status = statusSelect ? statusSelect.value : 'all';
+            const dateDebut = dateDebutInput.value;
+            const dateFin = dateFinInput.value;
+
+            // Afficher le chargement
+            resultsContainer.style.opacity = '0.5';
+
+            // Mettre à jour l'URL d'export dynamiquement
+            const exportUrl = `{{ path('admin.registrations.export') }}?uid=${encodeURIComponent(uid)}&date_debut=${encodeURIComponent(dateDebut)}&date_fin=${encodeURIComponent(dateFin)}&sid=${encodeURIComponent(sid)}&status=${encodeURIComponent(status)}`;
+            btnExport.href = exportUrl;
+
+            // Effectuer la requête AJAX
+            const url = `{{ path('admin.registrations') }}?uid=${encodeURIComponent(uid)}&date_debut=${encodeURIComponent(dateDebut)}&date_fin=${encodeURIComponent(dateFin)}&sid=${encodeURIComponent(sid)}&status=${encodeURIComponent(status)}`;
+            
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error('Erreur lors du chargement des données.');
+            })
+            .then(html => {
+                resultsContainer.innerHTML = html;
+                resultsContainer.style.opacity = '1';
+            })
+            .catch(error => {
+                console.error('Erreur AJAX:', error);
+                resultsContainer.style.opacity = '1';
+            });
+        }
+
+        if (userSelect) {
+            userSelect.addEventListener('change', updateRegistrationsData);
+        }
+        if (serviceSelect) {
+            serviceSelect.addEventListener('change', updateRegistrationsData);
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', updateRegistrationsData);
+        }
+        dateDebutInput.addEventListener('change', updateRegistrationsData);
+        dateFinInput.addEventListener('change', updateRegistrationsData);
+    });
+</script>
+{% endblock %}
