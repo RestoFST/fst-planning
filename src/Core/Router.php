@@ -8,6 +8,7 @@ use App\Controllers\BaseController as Controller;
 class Router
 {
     private AltoRouter $router;
+    private array|bool $matchedRoute = [];
 
     public function __construct()
     {
@@ -62,7 +63,10 @@ class Router
 
     public function match(): array|bool
     {
-        return $this->router->match();
+        if (!$this->matchedRoute||empty($this->matchedRoute)) {
+            $this->matchedRoute = $this->router->match();
+        }
+        return $this->matchedRoute;
     }
 
     public function generate(string $name, array $params = []): string
