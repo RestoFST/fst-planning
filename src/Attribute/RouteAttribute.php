@@ -4,7 +4,7 @@ namespace App\Attribute;
 
 use Attribute;
 
-#[Attribute(Attribute::TARGET_METHOD||Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_METHOD | Attribute::TARGET_CLASS)]
 class RouteAttribute
 {
     private string $method;

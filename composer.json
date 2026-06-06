@@ -26,5 +26,9 @@
         "psr-4": {
             "App\\":"src/"
         }
+    },
+    "scripts": {
+        "test": "phpunit --configuration phpunit.xml.dist",
+        "coverage": "env XDEBUG_MODE=coverage phpunit --configuration phpunit.xml.dist --coverage-text --coverage-html coverage/html"
     }
 }

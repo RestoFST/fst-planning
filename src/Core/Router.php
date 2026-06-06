@@ -20,7 +20,12 @@ class Router
 
     public function registerController(string $controllerClass): void
     {
-        $reflectionClass = new \ReflectionClass($controllerClass);
+        try {
+            $reflectionClass = new \ReflectionClass($controllerClass);
+        } catch (\ReflectionException $exception) {
+            throw new \InvalidArgumentException(sprintf('Controller class "%s" does not exist.', $controllerClass), 0, $exception);
+        }
+
         $attributes = $reflectionClass->getAttributes(\App\Attribute\RouteAttribute::class);
 
         $prefix = "/";
@@ -56,12 +61,10 @@ class Router
 
     public function addRoutes(array $routes): void
     {
-        foreach ($routes as $route) {
-            $this->router->addRoutes($routes);
-        }
+        $this->router->addRoutes($routes);
     }
 
-    public function match(): ?array
+    public function match(): array|bool
     {
         return $this->router->match();
     }
