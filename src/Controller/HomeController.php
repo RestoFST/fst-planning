@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-abstract class BaseController
+final class HomeController extends BaseController
 {
     public function __construct()
     {

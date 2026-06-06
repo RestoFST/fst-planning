@@ -3,7 +3,7 @@
 namespace App\Core;
 
 use AltoRouter;
-use App\Controller\BaseController as Controller;
+use App\Controllers\BaseController as Controller;
 
 class Router
 {

@@ -7,7 +7,7 @@ use App\Core\Router;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
-use App\Controller\BaseController;
+use App\Controllers\BaseController;
 use stdClass;
 
 #[CoversClass(Router::class)]
