@@ -7,9 +7,12 @@ use App\Core\Router;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use App\Controller\BaseController;
+use stdClass;
 
 #[CoversClass(Router::class)]
 #[UsesClass(RouteAttribute::class)]
+#[UsesClass(BaseController::class)]
 class RouterTest extends TestCase
 {
     private Router $router;
@@ -21,7 +24,8 @@ class RouterTest extends TestCase
 
     public function testRegisterControllerAddsNamedRouteWithClassPrefix(): void
     {
-        $this->router->registerController(DummyController::class);
+        $controller = new DummyController();
+        $this->router->registerController($controller);
 
         $this->assertSame('/api/list', $this->router->generate('dummy_list'));
 
@@ -29,64 +33,41 @@ class RouterTest extends TestCase
 
         $this->assertIsArray($match);
         $this->assertSame('dummy_list', $match['name']);
-        $this->assertSame([DummyController::class, 'list'], $match['target']);
+        $this->assertSame([$controller, 'list'], $match['target']);
     }
 
     public function testGenerateIncludesBasePathWhenSet(): void
     {
         $this->router->setBasePath('/app');
-        $this->router->registerController(DummyController::class);
+        $controller = new DummyController();
+        $this->router->registerController($controller);
 
         $this->assertSame('/app/api/list', $this->router->generate('dummy_list'));
     }
 
-    public function testRegisterControllerThrowsExceptionWhenClassDoesNotExist(): void
+    public function testMatchReturnsArray(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $controller = new DummyController();
+        $this->router->registerController($controller);
 
-        $this->router->registerController('NonExistentController');
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/api/list';
+        $this->assertEquals(['target' => [$controller, 'list'], 'params' => [], 'name' => 'dummy_list'], $this->router->match());
     }
 
-    public function testAddRoutesRegistersMultipleRoutesWithoutDuplicates(): void
+    public function testMatchReturnsNullOnNonExistent(): void
     {
-        $routes = [
-            ['GET', '/news', [DummyController::class, 'list'], 'news_list'],
-            ['POST', '/news', [DummyController::class, 'submit'], 'news_submit'],
-        ];
+        $controller = new DummyController();
+        $this->router->registerController($controller);
 
-        $this->router->addRoutes($routes);
-
-        $this->assertSame('/news', $this->router->generate('news_list'));
-        $this->assertSame('/news', $this->router->generate('news_submit'));
-
-        $matchGet = $this->router->getRouter()->match('/news', 'GET');
-        $this->assertSame('news_list', $matchGet['name']);
-
-        $matchPost = $this->router->getRouter()->match('/news', 'POST');
-        $this->assertSame('news_submit', $matchPost['name']);
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/non-existent';
+        $this->assertEquals(false, $this->router->match());
     }
-
-        public function testMatchReturnsArray(): void
-        {
-            $this->router->registerController(DummyController::class);
-    
-            $_SERVER['REQUEST_METHOD'] = 'GET';
-            $_SERVER['REQUEST_URI'] = '/api/list';
-            $this->assertEquals(['target' => [DummyController::class, 'list'], 'params' => [], 'name' => 'dummy_list'], $this->router->match());
-        }
-
-        public function testMatchReturnsNullOnNonExistent(): void
-        {
-            $this->router->registerController(DummyController::class);
-    
-            $_SERVER['REQUEST_METHOD'] = 'GET';
-            $_SERVER['REQUEST_URI'] = '/non-existent';
-            $this->assertEquals(false, $this->router->match());
-        }
 }
 
 #[RouteAttribute('GET', '/api')]
-class DummyController
+class DummyController extends BaseController
 {
     #[RouteAttribute('GET', '/list', 'dummy_list')]
     public function list(): void

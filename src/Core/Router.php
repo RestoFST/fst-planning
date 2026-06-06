@@ -3,6 +3,7 @@
 namespace App\Core;
 
 use AltoRouter;
+use App\Controller\BaseController as Controller;
 
 class Router
 {
@@ -18,12 +19,12 @@ class Router
         $this->router->setBasePath($basePath);
     }
 
-    public function registerController(string $controllerClass): void
+    public function registerController(Controller $controller): void
     {
         try {
-            $reflectionClass = new \ReflectionClass($controllerClass);
+            $reflectionClass = new \ReflectionClass($controller::class);
         } catch (\ReflectionException $exception) {
-            throw new \InvalidArgumentException(sprintf('Controller class "%s" does not exist.', $controllerClass), 0, $exception);
+            throw new \InvalidArgumentException(sprintf('Controller class "%s" does not exist.', $controller::class), 0, $exception);
         }
 
         $attributes = $reflectionClass->getAttributes(\App\Attribute\RouteAttribute::class);
@@ -39,11 +40,11 @@ class Router
         $methods = $reflectionClass->getMethods();
 
         foreach ($methods as $method) {
-            $this->registerMethod($controllerClass, $method, $prefix);
+            $this->registerMethod($controller, $method, $prefix);
         }
     }
 
-    public function registerMethod(string $controllerClass, \ReflectionMethod $method, string $prefix): void
+    public function registerMethod(Controller $controller, \ReflectionMethod $method, string $prefix): void
     {
         $attributes = $method->getAttributes(\App\Attribute\RouteAttribute::class);
 
@@ -53,15 +54,10 @@ class Router
             $this->router->map(
                 $routeAttribute->getMethod(),
                 $prefix . '/' . ltrim($routeAttribute->getPath(), '/'),
-                [$controllerClass, $method->getName()],
+                [$controller, $method->getName()],
                 $routeAttribute->getName()
             );
         }
-    }
-
-    public function addRoutes(array $routes): void
-    {
-        $this->router->addRoutes($routes);
     }
 
     public function match(): array|bool
