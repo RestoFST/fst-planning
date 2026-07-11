@@ -14,14 +14,20 @@
                 {% endif %}
             </h3>
             
-            {% set totalInscrits = creneau.inscrits|length %}
+            {% set totalInscrits = 0 %}
             {% set totalPresents = 0 %}
             {% set totalAbsents = 0 %}
             {% for inscrit in creneau.inscrits %}
                 {% if inscrit.presence == 'present' %}
                     {% set totalPresents = totalPresents + 1 %}
+                    {% set totalInscrits = totalInscrits + 1 %}
+                {% elseif inscrit.presence == 'en_attente' %}
+                    {% set totalInscrits = totalInscrits + 1 %}
                 {% elseif inscrit.presence == 'absent' %}
                     {% set totalAbsents = totalAbsents + 1 %}
+                    {% if inscrit.pointed == 1 %}
+                        {% set totalInscrits = totalInscrits + 1 %}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             
@@ -68,16 +74,20 @@
                             </td>
                             <td style="padding: 12px 20px; text-align: right; vertical-align: middle;">
                                 <div style="display: inline-flex; gap: 5px; justify-content: flex-end;">
-                                    {# Formulaire Présent #}
-                                    <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
-                                        <input type="hidden" name="aid" value="{{ creneau.aid }}">
-                                        <input type="hidden" name="uid" value="{{ inscrit.uid }}">
-                                        <input type="hidden" name="presence" value="present">
-                                        <input type="hidden" name="date" value="{{ dateSelectionnee }}">
-                                        <button type="submit" class="btn btn-success btn-sm" {% if inscrit.presence == 'present' %}disabled style="opacity: 0.5;"{% endif %}>
-                                            <i class="fa-solid fa-check"></i> Présent
-                                        </button>
-                                    </form>
+                                     {# Formulaire Présent #}
+                                     <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;"
+                                           {% if inscrit.presence == 'absent' and inscrit.pointed == 0 %}
+                                               data-declared-absent="true"
+                                               data-volunteer-name="{{ inscrit.firstname }} {{ inscrit.name }}"
+                                           {% endif %}>
+                                         <input type="hidden" name="aid" value="{{ creneau.aid }}">
+                                         <input type="hidden" name="uid" value="{{ inscrit.uid }}">
+                                         <input type="hidden" name="presence" value="present">
+                                         <input type="hidden" name="date" value="{{ dateSelectionnee }}">
+                                         <button type="submit" class="btn btn-success btn-sm" {% if inscrit.presence == 'present' %}disabled style="opacity: 0.5;"{% endif %}>
+                                             <i class="fa-solid fa-check"></i> Présent
+                                         </button>
+                                     </form>
 
                                     {# Formulaire Absent #}
                                     <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
@@ -91,7 +101,7 @@
                                     </form>
 
                                     {# Réinitialiser en attente #}
-                                    {% if inscrit.presence != 'en_attente' %}
+                                    {% if inscrit.pointed == 1 %}
                                         <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
                                             <input type="hidden" name="aid" value="{{ creneau.aid }}">
                                             <input type="hidden" name="uid" value="{{ inscrit.uid }}">

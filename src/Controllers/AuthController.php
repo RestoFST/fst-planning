@@ -55,8 +55,6 @@ final class AuthController extends BaseController
                 'firstname' => $user['firstname'],
                 'username' => $user['username'],
                 'roles' => $roles,
-                'email' => $user['email'],
-                'phone' => $user['phone'],
                 'rss_token' => $rssToken,
                 'last_password_modified' => $user['lastModifiedPassword']
             ];
@@ -170,8 +168,6 @@ final class AuthController extends BaseController
                         'firstname' => $user['firstname'],
                         'username' => $user['username'],
                         'roles' => $roles,
-                        'email' => $user['email'],
-                        'phone' => $user['phone'],
                         'rss_token' => $rssToken,
                         'last_password_modified' => $user['lastModifiedPassword']
                     ];

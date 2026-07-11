@@ -1,0 +1,31 @@
+{
+  "name": "Planning Bénévoles",
+  "short_name": "Planning Bénévoles",
+  "description": "Application de gestion et d'inscription pour le planning des bénévoles.",
+  "start_url": "/planning/",
+  "scope": "/planning/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e293b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+        "src": "/planning/dist/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "any"
+    },
+    {
+        "src": "/planning/dist/icon-maskable-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+        "purpose": "maskable"
+    },
+    {
+        "src": "/planning/dist/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any"
+    }
+  ]
+}

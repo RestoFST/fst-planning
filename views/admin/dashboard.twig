@@ -75,8 +75,8 @@
 {% endif %}
 
 <div class="row">
-    {# Colonne de gauche : Outils RGPD et flux RSS #}
-    <div class="col-md-5">
+    {# Colonne de gauche : Outils RGPD #}
+    <div class="col-md-6">
         
         {# Section RGPD #}
         <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
@@ -104,68 +104,11 @@
             </div>
         </div>
 
-        {# Section Bannière d'information #}
-        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
-            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
-                <i class="fa-solid fa-bullhorn text-primary" style="margin-right: 5px;"></i> Bannière globale d'information
-            </div>
-            <div class="panel-body" style="padding: 20px;">
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
-                    Affichez un message important (maintenance, travaux, annonce urgente) en haut de toutes les pages de l'application.
-                </p>
-                <form action="{{ path('admin.settings.update_banner') }}" method="POST" style="margin: 0;">
-                    <div class="checkbox" style="margin-top: 0; margin-bottom: 15px;">
-                        <label style="font-weight: bold; color: #1e293b;">
-                            <input type="checkbox" name="banner_active" value="1" {% if bannerActive %}checked{% endif %}> Activer l'affichage de la bannière
-                        </label>
-                    </div>
+    </div>
 
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="bannerMessageInput" style="color: #475569; font-weight: 600; margin-bottom: 5px;">Message (HTML autorisé) *</label>
-                        <textarea name="banner_message" id="bannerMessageInput" class="form-control" rows="3" placeholder="Ex: Une maintenance est planifiée ce soir à 20h00..." style="resize: vertical; font-size: 13px;">{{ bannerMessage }}</textarea>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label for="bannerTypeSelect" style="color: #475569; font-weight: 600; margin-bottom: 5px;">Style / Type de message *</label>
-                        <select name="banner_type" id="bannerTypeSelect" class="form-control" style="height: 40px;">
-                            <option value="info" {% if bannerType == 'info' %}selected{% endif %}>Information (Bleu)</option>
-                            <option value="warning" {% if bannerType == 'warning' %}selected{% endif %}>Alerte / Attention (Jaune)</option>
-                            <option value="critical" {% if bannerType == 'critical' %}selected{% endif %}>Critique / Important (Rouge)</option>
-                            <option value="success" {% if bannerType == 'success' %}selected{% endif %}>Succès / Résolu (Vert)</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block" style="height: 40px; background-color: #6366f1; border-color: #6366f1; font-weight: 600;">
-                        <i class="fa-solid fa-floppy-disk"></i> Mettre à jour la bannière
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        {# Section Configuration de l'accueil #}
-        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
-            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
-                <i class="fa-solid fa-sliders text-success" style="margin-right: 5px;"></i> Configuration de l'accueil
-            </div>
-            <div class="panel-body" style="padding: 20px;">
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
-                    Contrôlez le nombre de jours glissants affichés à l'avance pour les bénévoles sur la page d'accueil.
-                </p>
-                <form action="{{ path('admin.settings.update_days') }}" method="POST" style="margin: 0;">
-                    <div class="form-group">
-                        <label for="homeDaysCountInput">Nombre de jours à afficher *</label>
-                        <div class="input-group">
-                            <input type="number" name="home_days_count" id="homeDaysCountInput" value="{{ homeDaysCount }}" class="form-control" min="1" max="365" required style="height: 40px;">
-                            <span class="input-group-addon">jours</span>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-success btn-block" style="height: 40px; background-color: #10b981; border-color: #10b981; font-weight: 600;">
-                        <i class="fa-solid fa-floppy-disk"></i> Enregistrer la configuration
-                    </button>
-                </form>
-            </div>
-        </div>
-
+    {# Colonne de droite : Maintenance #}
+    <div class="col-md-6">
+        
         {# Section Maintenance de l'application #}
         <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
             <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
@@ -209,58 +152,6 @@
             </div>
         </div>
 
-        {# Section RSS logs #}
-        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
-            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px;">
-                <i class="fa-solid fa-rss text-warning" style="margin-right: 5px;"></i> Flux RSS d'Alerte (Logs à distance)
-            </div>
-            <div class="panel-body" style="padding: 20px;">
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">
-                    Permet aux administrateurs de s'abonner à distance aux alertes système (logs de niveaux <strong>Warning, Error et Critical</strong>) via un lecteur de flux RSS externe (ex: Thunderbird, Feedly).
-                </p>
-                
-                <div class="well well-sm" style="background-color: #fafaf9; border: 1px solid #e2e8f0; word-break: break-all; padding: 12px; margin-bottom: 15px;">
-                    <strong style="font-size: 11px; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 5px;">URL privée du flux RSS :</strong>
-                    <a href="{{ path('admin.logs.rss') }}?token={{ rssToken }}" target="_blank" style="font-size: 12px; font-family: monospace; font-weight: bold; color: #0284c7;">
-                        {{ path('admin.logs.rss') }}?token={{ rssToken }}
-                    </a>
-                </div>
-
-                <form action="{{ path('admin.rss.reset') }}" method="POST" onsubmit="return confirm('Attention : la réinitialisation du token révoquera immédiatement l\'accès à l\'ancienne URL pour tous les lecteurs RSS configurés. Voulez-vous continuer ?');">
-                    <button type="submit" class="btn btn-warning btn-block" style="height: 40px;">
-                        <i class="fa-solid fa-arrows-rotate"></i> Réinitialiser le token d'accès
-                    </button>
-                </form>
-            </div>
-        </div>
-
-    </div>
-
-    {# Colonne de droite : Liseuse de logs #}
-    <div class="col-md-7">
-        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
-            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-                <span><i class="fa-solid fa-terminal text-success" style="margin-right: 5px;"></i> Logs système (300 dernières lignes)</span>
-                <a href="{{ path('admin.dashboard') }}" class="btn btn-default btn-xs" style="padding: 4px 8px;">
-                    <i class="fa-solid fa-arrows-rotate"></i> Rafraîchir
-                </a>
-            </div>
-            <div class="panel-body" style="padding: 0;">
-                <pre style="margin: 0; background-color: #0f172a; color: #38bdf8; border: none; border-radius: 0 0 8px 8px; padding: 20px; font-family: 'Courier New', Courier, monospace; font-size: 11px; max-height: 450px; overflow-y: scroll; white-space: pre-wrap; word-break: break-all; line-height: 1.5;">{{ logsContent }}</pre>
-            </div>
-        </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Faire défiler automatiquement les logs vers le bas au chargement de la page
-    document.addEventListener("DOMContentLoaded", function() {
-        const logPre = document.querySelector('pre');
-        if (logPre) {
-            logPre.scrollTop = logPre.scrollHeight;
-        }
-    });
-</script>
 {% endblock %}

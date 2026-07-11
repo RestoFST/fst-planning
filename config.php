@@ -52,6 +52,7 @@ return [
 
     'app.env' => env('APP_ENV', 'production'),
     'app.debug' => env('APP_ENV', 'production') === 'development',
+    'contact.mail' => env('CONTACT_MAIL', ''),
     'db.config' => [
         'host' => env('DB_HOST', 'localhost'),
         'name' => env('DB_NAME', 'myapp'),

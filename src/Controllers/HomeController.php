@@ -77,6 +77,9 @@ final class HomeController extends BaseController
                   AND s.id NOT IN (
                       SELECT COALESCE(sid, s.id) FROM services_holyday WHERE :date BETWEEN start_date AND end_date
                   )
+                  AND s.id NOT IN (
+                      SELECT sid FROM services_opening WHERE date = :date
+                  )
                 ORDER BY s.name ASC
             ");
             $stmtClassiques->execute(['workday' => $dayOfWeek, 'date' => $dateStr]);
@@ -766,15 +769,27 @@ final class HomeController extends BaseController
             }
         }
 
-        // Récupérer les groupes associés à cette activité
-        $stmtGroups = $pdo->prepare("
-            SELECT g.name FROM services_groups sg
-            JOIN `groups` g ON g.id = sg.gid
-            WHERE sg.sid = :sid
-            ORDER BY g.name ASC
-        ");
-        $stmtGroups->execute(['sid' => $sid]);
-        $groups = $stmtGroups->fetchAll(\PDO::FETCH_COLUMN);
+        // Récupérer les groupes associés (de l'ouverture exceptionnelle ou de l'activité)
+        $groups = [];
+        if ($opening !== false) {
+            $stmtGroups = $pdo->prepare("
+                SELECT g.name FROM services_opening_groups sog
+                JOIN `groups` g ON g.id = sog.gid
+                WHERE sog.soid = :soid
+                ORDER BY g.name ASC
+            ");
+            $stmtGroups->execute(['soid' => $opening['id']]);
+            $groups = $stmtGroups->fetchAll(\PDO::FETCH_COLUMN);
+        } else {
+            $stmtGroups = $pdo->prepare("
+                SELECT g.name FROM services_groups sg
+                JOIN `groups` g ON g.id = sg.gid
+                WHERE sg.sid = :sid
+                ORDER BY g.name ASC
+            ");
+            $stmtGroups->execute(['sid' => $sid]);
+            $groups = $stmtGroups->fetchAll(\PDO::FETCH_COLUMN);
+        }
 
         return [
             'id' => $service['id'],
@@ -802,5 +817,86 @@ final class HomeController extends BaseController
         $j = $date->format('j');
         
         return $jours[$w] . ' ' . $j . ' ' . $mois[$n];
+    }
+
+    #[AuthMiddleware]
+    #[RouteAttribute(method: "GET", path: "/contact", name: "contact")]
+    public function contactForm(): Response
+    {
+        $success = $_SESSION['contact_success'] ?? null;
+        $error = $_SESSION['contact_error'] ?? null;
+        unset($_SESSION['contact_success'], $_SESSION['contact_error']);
+
+        return new Response(body: $this->render('contact', [
+            'success' => $success,
+            'error' => $error
+        ]));
+    }
+
+    #[AuthMiddleware]
+    #[RouteAttribute(method: "POST", path: "/contact", name: "contact.submit")]
+    public function contactSubmit(ServerRequestInterface $request): Response
+    {
+        $parsedBody = $request->getParsedBody();
+        $subject = trim($parsedBody['subject'] ?? '');
+        $message = trim($parsedBody['message'] ?? '');
+
+        if (empty($subject) || empty($message)) {
+            $_SESSION['contact_error'] = "Veuillez remplir tous les champs obligatoires.";
+            return $this->redirect('contact');
+        }
+
+        $contactMail = $this->container->get('contact.mail');
+        if (empty($contactMail)) {
+            $_SESSION['contact_error'] = "Le service de contact n'est pas configuré. Veuillez contacter l'administrateur.";
+            return $this->redirect('contact');
+        }
+
+        $user = $_SESSION['user'];
+        $userFullName = $user['firstname'] . ' ' . $user['name'];
+
+        $type = trim($parsedBody['type'] ?? 'idee');
+        $typeLabel = ($type === 'bug') ? '[BUG]' : '[IDÉE]';
+
+        // Construire l'e-mail
+        $to = $contactMail;
+        $emailSubject = $typeLabel . " " . $subject;
+        $emailBody = "Nouveau retour utilisateur reçu depuis le site :\n\n";
+        $emailBody .= "Type : " . (($type === 'bug') ? 'Bug / Problème technique' : 'Idée / Amélioration') . "\n";
+        $emailBody .= "Bénévole : " . $userFullName . " (Nom d'utilisateur: " . $user['username'] . ")\n";
+        $emailBody .= "Adresse e-mail : " . $userEmail . "\n";
+        $emailBody .= "Sujet : " . $subject . "\n\n";
+        $emailBody .= "Message :\n" . $message . "\n";
+
+        // Déterminer dynamiquement le nom de domaine
+        $host = $request->getUri()->getHost();
+        if (empty($host) || in_array($host, ['localhost', '127.0.0.1', '::1'])) {
+            $host = 'planning-benevoles.fr';
+        }
+
+        // En-têtes pour l'e-mail
+        $headers = [
+            'From' => 'no-reply@' . $host,
+            'X-Mailer' => 'PHP/' . phpversion(),
+            'Content-Type' => 'text/plain; charset=UTF-8'
+        ];
+
+        // Envoyer le mail
+        $sent = false;
+        try {
+            // mail() en PHP accepte les en-têtes sous forme de tableau (depuis PHP 7.2)
+            $sent = mail($to, $emailSubject, $emailBody, $headers);
+        } catch (\Exception $e) {
+            $this->logger->error("Erreur lors de l'envoi de mail de contact", ['error' => $e->getMessage()]);
+        }
+
+        if ($sent) {
+            Logger::info("E-mail de contact envoyé", ['from_uid' => $user['id'], 'to' => $to]);
+            $_SESSION['contact_success'] = "Votre message a été envoyé avec succès.";
+        } else {
+            $_SESSION['contact_error'] = "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer.";
+        }
+
+        return $this->redirect('contact');
     }
 }

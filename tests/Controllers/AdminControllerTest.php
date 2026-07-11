@@ -39,6 +39,7 @@ class AdminControllerTest extends TestCase
         $this->router->method('generate')->willReturnCallback(function($name) {
             if ($name === 'admin.pointage') return '/admin/pointage';
             if ($name === 'admin.users') return '/admin/users';
+            if ($name === 'admin.display_settings') return '/admin/display-settings';
             return '';
         });
 
@@ -624,5 +625,79 @@ class AdminControllerTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(302, $response->getStatusCode());
         $this->assertSame("L'activité a bien été mise à jour.", $_SESSION['activity_success']);
+    }
+
+    public function testDisplaySettingsPage(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'roles' => ['responsable']
+        ];
+
+        $stmt = $this->createMock(\PDOStatement::class);
+        $stmt->method('execute')->willReturn(true);
+        $stmt->method('fetchColumn')->willReturn('7');
+        $stmt->method('fetchAll')->willReturn([]);
+        $this->pdo->method('prepare')->willReturn($stmt);
+
+        // Mocker match() du router car render() l'appelle
+        $this->router->method('match')->willReturn([
+            'target' => [AdminController::class, 'displaySettings']
+        ]);
+
+        $response = $this->controller->displaySettings();
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
+    public function testUpdateHomeDaysCountUpdatesDatabase(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'roles' => ['responsable']
+        ];
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getParsedBody')->willReturn([
+            'home_days_count' => '15'
+        ]);
+
+        $stmt = $this->createMock(\PDOStatement::class);
+        $stmt->method('execute')->willReturn(true);
+        $this->pdo->method('prepare')->willReturn($stmt);
+
+        $response = $this->controller->updateHomeDaysCount($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertSame('/admin/display-settings', $response->getHeaderLine('Location'));
+        $this->assertSame("Le nombre de jours affichés sur la page d'accueil a été mis à jour à 15 jours.", $_SESSION['display_success']);
+    }
+
+    public function testUpdateBannerUpdatesDatabase(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'roles' => ['responsable']
+        ];
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getParsedBody')->willReturn([
+            'banner_message' => 'Annonce importante !',
+            'banner_type' => 'warning',
+            'banner_active' => '1'
+        ]);
+
+        $stmt = $this->createMock(\PDOStatement::class);
+        $stmt->method('execute')->willReturn(true);
+        $this->pdo->method('prepare')->willReturn($stmt);
+
+        $response = $this->controller->updateBanner($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertSame('/admin/display-settings', $response->getHeaderLine('Location'));
+        $this->assertSame("La bannière d'information globale a été mise à jour avec succès.", $_SESSION['display_success']);
     }
 }

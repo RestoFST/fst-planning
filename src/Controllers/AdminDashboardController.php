@@ -162,7 +162,7 @@ class AdminDashboardController extends BaseController
         $pdo = $this->database->getConnection();
 
         // 1. Charger le profil de l'utilisateur
-        $stmtUser = $pdo->prepare("SELECT id, firstname, name, username, email, phone, roles, lastModifiedPassword FROM users WHERE id = :id");
+        $stmtUser = $pdo->prepare("SELECT id, firstname, name, username, roles, lastModifiedPassword FROM users WHERE id = :id");
         $stmtUser->execute(['id' => $uid]);
         $user = $stmtUser->fetch(\PDO::FETCH_ASSOC);
 
@@ -296,64 +296,6 @@ class AdminDashboardController extends BaseController
         ], $xml);
     }
 
-    #[AuthMiddleware('admin')]
-    #[RouteAttribute(method: "POST", path: "/admin/settings/update_days", name: "admin.settings.update_days")]
-    public function updateHomeDaysCount(ServerRequestInterface $request): Response
-    {
-        $parsedBody = $request->getParsedBody();
-        $daysCount = (int)($parsedBody['home_days_count'] ?? 7);
-
-        if ($daysCount < 1 || $daysCount > 365) {
-            $_SESSION['admin_error'] = "Le nombre de jours doit être compris entre 1 et 365.";
-            return $this->redirect('admin.dashboard');
-        }
-
-        $pdo = $this->database->getConnection();
-        try {
-            $stmt = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'home_days_count'");
-            $stmt->execute(['value' => (string)$daysCount]);
-
-            Logger::info("Mise à jour du nombre de jours affichés à l'accueil", ['days_count' => $daysCount, 'admin_uid' => $_SESSION['user']['id']]);
-            $_SESSION['admin_success'] = "Le nombre de jours affichés sur la page d'accueil a été mis à jour à $daysCount jours.";
-        } catch (\Exception $e) {
-            $_SESSION['admin_error'] = "Erreur lors de la mise à jour : " . $e->getMessage();
-        }
-
-        return $this->redirect('admin.dashboard');
-    }
-
-    #[AuthMiddleware('admin')]
-    #[RouteAttribute(method: "POST", path: "/admin/settings/update_banner", name: "admin.settings.update_banner")]
-    public function updateBanner(ServerRequestInterface $request): Response
-    {
-        $parsedBody = $request->getParsedBody();
-        $message = trim($parsedBody['banner_message'] ?? '');
-        $type = $parsedBody['banner_type'] ?? 'info';
-        $active = isset($parsedBody['banner_active']) && $parsedBody['banner_active'] === '1' ? '1' : '0';
-
-        if (!in_array($type, ['info', 'warning', 'critical', 'success'])) {
-            $type = 'info';
-        }
-
-        $pdo = $this->database->getConnection();
-        try {
-            $stmtMessage = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_message'");
-            $stmtMessage->execute(['value' => $message]);
-
-            $stmtType = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_type'");
-            $stmtType->execute(['value' => $type]);
-
-            $stmtActive = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_active'");
-            $stmtActive->execute(['value' => $active]);
-
-            Logger::info("Mise à jour de la bannière d'information globale", ['active' => $active, 'type' => $type, 'admin_uid' => $_SESSION['user']['id']]);
-            $_SESSION['admin_success'] = "La bannière d'information globale a été mise à jour avec succès.";
-        } catch (\Exception $e) {
-            $_SESSION['admin_error'] = "Erreur lors de la mise à jour de la bannière : " . $e->getMessage();
-        }
-
-        return $this->redirect('admin.dashboard');
-    }
 
     #[AuthMiddleware('admin')]
     #[RouteAttribute(method: "POST", path: "/admin/settings/maintenance_bypass", name: "admin.settings.maintenance_bypass")]

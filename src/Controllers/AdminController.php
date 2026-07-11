@@ -253,8 +253,8 @@ final class AdminController extends BaseController
 
                 // Insérer le nouvel utilisateur (lastModifiedPassword à NULL)
                 $stmtInsert = $pdo->prepare("
-                    INSERT INTO users (name, firstname, username, password, roles, email, phone, lastModifiedPassword) 
-                    VALUES (:name, :firstname, :username, :password, :roles, NULL, NULL, NULL)
+                    INSERT INTO users (name, firstname, username, password, roles, lastModifiedPassword) 
+                    VALUES (:name, :firstname, :username, :password, :roles, NULL)
                 ");
                 $stmtInsert->execute([
                     'name' => $name,
@@ -433,6 +433,73 @@ final class AdminController extends BaseController
 
         $pdo = $this->database->getConnection();
 
+        // Proactivement initialiser les créneaux (appoinment) programmés pour ce jour
+        // 1. Récupérer les services classiques programmés pour ce jour de la semaine
+        // SAUF s'ils sont fermés exceptionnellement (dans services_holyday)
+        $stmtClassiques = $pdo->prepare("
+            SELECT s.id as sid, sw.start_time, sw.end_time
+            FROM services s
+            JOIN services_workdays sw ON sw.sid = s.id
+            WHERE sw.workday = :workday
+              AND s.id NOT IN (
+                  SELECT COALESCE(sid, s.id) FROM services_holyday WHERE :date BETWEEN start_date AND end_date
+              )
+              AND s.id NOT IN (
+                  SELECT sid FROM services_opening WHERE date = :date
+              )
+        ");
+        $stmtClassiques->execute(['workday' => $dayOfWeek, 'date' => $dateStr]);
+        $servicesClassiques = $stmtClassiques->fetchAll(\PDO::FETCH_ASSOC);
+
+        // 2. Récupérer les services exceptionnellement ouverts à cette date (ceux dans services_opening)
+        $stmtExceptionnels = $pdo->prepare("
+            SELECT s.id as sid, so.start_time, so.end_time
+            FROM services s
+            JOIN services_opening so ON so.sid = s.id
+            WHERE so.date = :date
+        ");
+        $stmtExceptionnels->execute(['date' => $dateStr]);
+        $servicesExceptionnels = $stmtExceptionnels->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Fusionner les créneaux planifiés
+        $allActive = [];
+        foreach ($servicesClassiques as $s) {
+            $key = $s['sid'] . '_' . ($s['start_time'] ?? '') . '_' . ($s['end_time'] ?? '');
+            $allActive[$key] = $s;
+        }
+        foreach ($servicesExceptionnels as $s) {
+            $key = $s['sid'] . '_' . ($s['start_time'] ?? '') . '_' . ($s['end_time'] ?? '');
+            $allActive[$key] = $s;
+        }
+
+        // Créer l'entrée dans la table `appoinment` si elle n'existe pas
+        foreach ($allActive as $s) {
+            $stmtCheck = $pdo->prepare("
+                SELECT id FROM appoinment 
+                WHERE sid = :sid AND date = :date 
+                  AND ((start_time IS NULL AND :start_time IS NULL) OR start_time = :start_time)
+                  AND ((end_time IS NULL AND :end_time IS NULL) OR end_time = :end_time)
+            ");
+            $stmtCheck->execute([
+                'sid' => $s['sid'],
+                'date' => $dateStr,
+                'start_time' => $s['start_time'],
+                'end_time' => $s['end_time']
+            ]);
+            if (!$stmtCheck->fetch()) {
+                $stmtInsert = $pdo->prepare("
+                    INSERT INTO appoinment (sid, date, start_time, end_time) 
+                    VALUES (:sid, :date, :start_time, :end_time)
+                ");
+                $stmtInsert->execute([
+                    'sid' => $s['sid'],
+                    'date' => $dateStr,
+                    'start_time' => $s['start_time'],
+                    'end_time' => $s['end_time']
+                ]);
+            }
+        }
+
         // Récupérer les créneaux pour cette date
         $stmt = $pdo->prepare("
             SELECT a.id as aid, s.name as service_name, 
@@ -512,8 +579,12 @@ final class AdminController extends BaseController
         $aid = (int)($parsedBody['aid'] ?? 0);
         $uid = (int)($parsedBody['uid'] ?? 0);
         $dateStr = $parsedBody['date'] ?? date('Y-m-d');
+        $isAjax = strtolower($request->getHeaderLine('X-Requested-With')) === 'xmlhttprequest';
 
         if (!$aid || !$uid) {
+            if ($isAjax) {
+                return new Response(400, ['Content-Type' => 'application/json'], json_encode(['error' => "Données d'inscription invalides."]));
+            }
             $_SESSION['pointage_error'] = "Données d'inscription invalides.";
             return new Response(302, ['Location' => $this->generateUrl('admin.pointage') . '?date=' . urlencode($dateStr)]);
         }
@@ -524,6 +595,9 @@ final class AdminController extends BaseController
             $stmtCheck = $pdo->prepare("SELECT * FROM appointments_users WHERE aid = :aid AND uid = :uid");
             $stmtCheck->execute(['aid' => $aid, 'uid' => $uid]);
             if ($stmtCheck->fetch()) {
+                if ($isAjax) {
+                    return new Response(400, ['Content-Type' => 'application/json'], json_encode(['error' => "Ce bénévole est déjà inscrit à ce créneau."]));
+                }
                 $_SESSION['pointage_error'] = "Ce bénévole est déjà inscrit à ce créneau.";
                 return new Response(302, ['Location' => $this->generateUrl('admin.pointage') . '?date=' . urlencode($dateStr)]);
             }
@@ -531,8 +605,15 @@ final class AdminController extends BaseController
             // Inscrire
             $stmtInsert = $pdo->prepare("INSERT INTO appointments_users (aid, uid, presence) VALUES (:aid, :uid, 'en_attente')");
             $stmtInsert->execute(['aid' => $aid, 'uid' => $uid]);
+            
+            if ($isAjax) {
+                return new Response(200, ['Content-Type' => 'application/json'], json_encode(['success' => "Bénévole ajouté avec succès à ce créneau."]));
+            }
             $_SESSION['pointage_success'] = "Bénévole ajouté avec succès à ce créneau.";
         } catch (\Exception $e) {
+            if ($isAjax) {
+                return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => "Erreur lors de l'ajout du bénévole : " . $e->getMessage()]));
+            }
             $_SESSION['pointage_error'] = "Erreur lors de l'ajout du bénévole : " . $e->getMessage();
         }
 
@@ -548,8 +629,12 @@ final class AdminController extends BaseController
         $uid = (int)($parsedBody['uid'] ?? 0);
         $presence = $parsedBody['presence'] ?? 'en_attente';
         $dateStr = $parsedBody['date'] ?? date('Y-m-d');
+        $isAjax = strtolower($request->getHeaderLine('X-Requested-With')) === 'xmlhttprequest';
 
         if (!$aid || !$uid || !in_array($presence, ['en_attente', 'present', 'absent'])) {
+            if ($isAjax) {
+                return new Response(400, ['Content-Type' => 'application/json'], json_encode(['error' => "Données de pointage invalides."]));
+            }
             $_SESSION['pointage_error'] = "Données de pointage invalides.";
             return new Response(302, ['Location' => $this->generateUrl('admin.pointage') . '?date=' . urlencode($dateStr)]);
         }
@@ -567,8 +652,15 @@ final class AdminController extends BaseController
                 'aid' => $aid,
                 'uid' => $uid
             ]);
+            
+            if ($isAjax) {
+                return new Response(200, ['Content-Type' => 'application/json'], json_encode(['success' => "Pointage mis à jour avec succès."]));
+            }
             $_SESSION['pointage_success'] = "Pointage mis à jour avec succès.";
         } catch (\Exception $e) {
+            if ($isAjax) {
+                return new Response(500, ['Content-Type' => 'application/json'], json_encode(['error' => "Erreur de pointage : " . $e->getMessage()]));
+            }
             $_SESSION['pointage_error'] = "Erreur de pointage : " . $e->getMessage();
         }
 
@@ -795,6 +887,68 @@ final class AdminController extends BaseController
             $stmtGroup = $pdo->prepare("INSERT INTO services_groups (sid, gid) VALUES (:sid, :gid)");
             foreach ($groups as $gid) {
                 $stmtGroup->execute(['sid' => $id, 'gid' => (int)$gid]);
+            }
+
+            // 6. Mettre à jour les créneaux futurs (appoinment) correspondants aux nouveaux horaires de travail
+            if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                $newSchedules = [];
+                foreach ($workdaysInput as $index => $day) {
+                    $dayInt = (int)$day;
+                    $dayStart = trim($startHoursInput[$index] ?? '');
+                    $dayEnd = trim($endHoursInput[$index] ?? '');
+                    $newSchedules[$dayInt][] = [
+                        'start_time' => empty($dayStart) ? null : $dayStart,
+                        'end_time' => empty($dayEnd) ? null : $dayEnd
+                    ];
+                }
+
+                // Trier les nouveaux horaires chronologiquement pour chaque jour
+                foreach ($newSchedules as $dayInt => &$scheds) {
+                    usort($scheds, function($a, $b) {
+                        if ($a['start_time'] === null) return 1;
+                        if ($b['start_time'] === null) return -1;
+                        return strcmp($a['start_time'], $b['start_time']);
+                    });
+                }
+                unset($scheds);
+
+                $today = date('Y-m-d');
+                $stmtApps = $pdo->prepare("
+                    SELECT id, date, start_time, end_time 
+                    FROM appoinment 
+                    WHERE sid = :sid AND date >= :today
+                    ORDER BY date ASC, start_time ASC
+                ");
+                $stmtApps->execute(['sid' => $id, 'today' => $today]);
+                $futureApps = $stmtApps->fetchAll(\PDO::FETCH_ASSOC);
+
+                // Grouper les créneaux par date
+                $appsByDate = [];
+                foreach ($futureApps as $app) {
+                    $appsByDate[$app['date']][] = $app;
+                }
+
+                $stmtUpdateApp = $pdo->prepare("
+                    UPDATE appoinment 
+                    SET start_time = :start_time, end_time = :end_time 
+                    WHERE id = :id
+                ");
+
+                foreach ($appsByDate as $appDate => $dateApps) {
+                    $appDayOfWeek = (int) (new \DateTime($appDate))->format('N');
+                    if (isset($newSchedules[$appDayOfWeek])) {
+                        $scheds = $newSchedules[$appDayOfWeek];
+                        foreach ($dateApps as $idx => $app) {
+                            if (isset($scheds[$idx])) {
+                                $stmtUpdateApp->execute([
+                                    'start_time' => $scheds[$idx]['start_time'],
+                                    'end_time' => $scheds[$idx]['end_time'],
+                                    'id' => $app['id']
+                                ]);
+                            }
+                        }
+                    }
+                }
             }
 
             $pdo->commit();
@@ -1269,6 +1423,43 @@ final class AdminController extends BaseController
                 }
             }
 
+            // Si un créneau (appoinment) chevauchant existe déjà pour cette activité à cette date, 
+            // on le met à jour avec les nouveaux horaires exceptionnels de l'ouverture
+            if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                $stmtFindApp = $pdo->prepare("
+                    SELECT id FROM appoinment 
+                    WHERE sid = :sid AND date = :date
+                      AND (
+                        (start_time IS NULL OR end_time IS NULL)
+                        OR (:start_time IS NULL OR :end_time IS NULL)
+                        OR (start_time < :end_time_chk AND :start_time_chk < end_time)
+                      )
+                    LIMIT 1
+                ");
+                $stmtFindApp->execute([
+                    'sid' => $sid,
+                    'date' => $date,
+                    'start_time' => $hasTime ? $startTime : null,
+                    'end_time' => $hasTime ? $endTime : null,
+                    'start_time_chk' => $hasTime ? $startTime : null,
+                    'end_time_chk' => $hasTime ? $endTime : null
+                ]);
+                $appRow = $stmtFindApp->fetch(\PDO::FETCH_ASSOC);
+
+                if ($appRow) {
+                    $stmtUpdateApp = $pdo->prepare("
+                        UPDATE appoinment 
+                        SET start_time = :start_time, end_time = :end_time 
+                        WHERE id = :id
+                    ");
+                    $stmtUpdateApp->execute([
+                        'start_time' => $hasTime ? $startTime : null,
+                        'end_time' => $hasTime ? $endTime : null,
+                        'id' => $appRow['id']
+                    ]);
+                }
+            }
+
             // 2. Insérer le jour d'ouverture
             $stmtInsert = $pdo->prepare("
                 INSERT INTO services_opening (sid, date, start_time, end_time, description) 
@@ -1329,6 +1520,14 @@ final class AdminController extends BaseController
         try {
             $pdo->beginTransaction();
 
+            // Récupérer l'ouverture originale pour la mise à jour correspondante des créneaux
+            $original = null;
+            if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                $stmtOriginal = $pdo->prepare("SELECT sid, date, start_time, end_time FROM services_opening WHERE id = :id");
+                $stmtOriginal->execute(['id' => $id]);
+                $original = $stmtOriginal->fetch(\PDO::FETCH_ASSOC);
+            }
+
             // 1. Récupérer les ouvertures existantes pour ce service à cette date, en excluant l'enregistrement en cours
             $stmtCheck = $pdo->prepare("SELECT id, start_time, end_time FROM services_opening WHERE sid = :sid AND date = :date AND id != :id");
             $stmtCheck->execute(['sid' => $sid, 'date' => $date, 'id' => $id]);
@@ -1357,6 +1556,22 @@ final class AdminController extends BaseController
                 }
             }
 
+            // Si un créneau (appoinment) existe déjà pour cette activité à cette date, 
+            // on le met à jour avec les nouveaux horaires exceptionnels de l'ouverture
+            if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
+                $stmtUpdateApp = $pdo->prepare("
+                    UPDATE appoinment 
+                    SET start_time = :start_time, end_time = :end_time 
+                    WHERE sid = :sid AND date = :date
+                ");
+                $stmtUpdateApp->execute([
+                    'start_time' => $hasTime ? $startTime : null,
+                    'end_time' => $hasTime ? $endTime : null,
+                    'sid' => $sid,
+                    'date' => $date
+                ]);
+            }
+
             // 2. Mettre à jour l'ouverture
             $stmtUpdate = $pdo->prepare("
                 UPDATE services_opening 
@@ -1383,6 +1598,38 @@ final class AdminController extends BaseController
             $stmtGroup = $pdo->prepare("INSERT INTO services_opening_groups (soid, gid) VALUES (:soid, :gid)");
             foreach ($groups as $gid) {
                 $stmtGroup->execute(['soid' => $id, 'gid' => (int)$gid]);
+            }
+
+            // 4. Mettre à jour le créneau futur correspondant (appoinment) s'il existe
+            if ($original && $original['date'] >= date('Y-m-d')) {
+                $stmtFindApp = $pdo->prepare("
+                    SELECT id FROM appoinment 
+                    WHERE sid = :sid AND date = :date 
+                      AND ((start_time IS NULL AND :orig_start IS NULL) OR start_time = :orig_start)
+                      AND ((end_time IS NULL AND :orig_end IS NULL) OR end_time = :orig_end)
+                ");
+                $stmtFindApp->execute([
+                    'sid' => $original['sid'],
+                    'date' => $original['date'],
+                    'orig_start' => $original['start_time'],
+                    'orig_end' => $original['end_time']
+                ]);
+                $appRow = $stmtFindApp->fetch(\PDO::FETCH_ASSOC);
+                
+                if ($appRow) {
+                    $stmtUpdateApp = $pdo->prepare("
+                        UPDATE appoinment 
+                        SET sid = :new_sid, date = :new_date, start_time = :new_start, end_time = :new_end 
+                        WHERE id = :id
+                    ");
+                    $stmtUpdateApp->execute([
+                        'new_sid' => $sid,
+                        'new_date' => $date,
+                        'new_start' => $hasTime ? $startTime : null,
+                        'new_end' => $hasTime ? $endTime : null,
+                        'id' => $appRow['id']
+                    ]);
+                }
             }
 
             $pdo->commit();
@@ -1866,5 +2113,95 @@ final class AdminController extends BaseController
         }
 
         return $this->redirect('admin.groups');
+    }
+
+    #[AuthMiddleware('responsable')]
+    #[RouteAttribute(method: "GET", path: "/admin/display-settings", name: "admin.display_settings")]
+    public function displaySettings(): Response
+    {
+        $pdo = $this->database->getConnection();
+
+        $stmtDays = $pdo->prepare("SELECT value FROM settings WHERE name = 'home_days_count'");
+        $stmtDays->execute();
+        $homeDaysCount = $stmtDays->fetchColumn() ?: '7';
+
+        $stmtBanner = $pdo->prepare("SELECT name, value FROM settings WHERE name IN ('banner_message', 'banner_type', 'banner_active')");
+        $stmtBanner->execute();
+        $bannerSettings = $stmtBanner->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
+        $bannerMessage = $bannerSettings['banner_message'] ?? '';
+        $bannerType = $bannerSettings['banner_type'] ?? 'info';
+        $bannerActive = ($bannerSettings['banner_active'] ?? '0') === '1';
+
+        $success = $_SESSION['display_success'] ?? null;
+        $error = $_SESSION['display_error'] ?? null;
+        unset($_SESSION['display_success'], $_SESSION['display_error']);
+
+        return new Response(body: $this->render('admin/display_settings', [
+            'homeDaysCount' => $homeDaysCount,
+            'bannerMessage' => $bannerMessage,
+            'bannerType' => $bannerType,
+            'bannerActive' => $bannerActive,
+            'success' => $success,
+            'error' => $error
+        ]));
+    }
+
+    #[AuthMiddleware('responsable')]
+    #[RouteAttribute(method: "POST", path: "/admin/settings/update_days", name: "admin.settings.update_days")]
+    public function updateHomeDaysCount(ServerRequestInterface $request): Response
+    {
+        $parsedBody = $request->getParsedBody();
+        $daysCount = (int)($parsedBody['home_days_count'] ?? 7);
+
+        if ($daysCount < 1 || $daysCount > 365) {
+            $_SESSION['display_error'] = "Le nombre de jours doit être compris entre 1 et 365.";
+            return $this->redirect('admin.display_settings');
+        }
+
+        $pdo = $this->database->getConnection();
+        try {
+            $stmt = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'home_days_count'");
+            $stmt->execute(['value' => (string)$daysCount]);
+
+            Logger::info("Mise à jour du nombre de jours affichés à l'accueil", ['days_count' => $daysCount, 'admin_uid' => $_SESSION['user']['id']]);
+            $_SESSION['display_success'] = "Le nombre de jours affichés sur la page d'accueil a été mis à jour à $daysCount jours.";
+        } catch (\Exception $e) {
+            $_SESSION['display_error'] = "Erreur lors de la mise à jour : " . $e->getMessage();
+        }
+
+        return $this->redirect('admin.display_settings');
+    }
+
+    #[AuthMiddleware('responsable')]
+    #[RouteAttribute(method: "POST", path: "/admin/settings/update_banner", name: "admin.settings.update_banner")]
+    public function updateBanner(ServerRequestInterface $request): Response
+    {
+        $parsedBody = $request->getParsedBody();
+        $message = trim($parsedBody['banner_message'] ?? '');
+        $type = $parsedBody['banner_type'] ?? 'info';
+        $active = isset($parsedBody['banner_active']) && $parsedBody['banner_active'] === '1' ? '1' : '0';
+
+        if (!in_array($type, ['info', 'warning', 'critical', 'success'])) {
+            $type = 'info';
+        }
+
+        $pdo = $this->database->getConnection();
+        try {
+            $stmtMessage = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_message'");
+            $stmtMessage->execute(['value' => $message]);
+
+            $stmtType = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_type'");
+            $stmtType->execute(['value' => $type]);
+
+            $stmtActive = $pdo->prepare("UPDATE settings SET value = :value WHERE name = 'banner_active'");
+            $stmtActive->execute(['value' => $active]);
+
+            Logger::info("Mise à jour de la bannière d'information globale", ['active' => $active, 'type' => $type, 'admin_uid' => $_SESSION['user']['id']]);
+            $_SESSION['display_success'] = "La bannière d'information globale a été mise à jour avec succès.";
+        } catch (\Exception $e) {
+            $_SESSION['display_error'] = "Erreur lors de la mise à jour de la bannière : " . $e->getMessage();
+        }
+
+        return $this->redirect('admin.display_settings');
     }
 }

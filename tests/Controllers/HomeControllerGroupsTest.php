@@ -37,19 +37,22 @@ class HomeControllerGroupsTest extends TestCase
 
         $this->router->method('generate')->willReturnCallback(function($name) {
             if ($name === 'index') return '/';
+            if ($name === 'contact') return '/contact';
             return '';
         });
 
-        $this->router->method('match')->willReturn([
-            'target' => [HomeController::class, 'index']
-        ]);
+        $this->router->method('match')->willReturnCallback(function() {
+            return ['target' => [HomeController::class, 'index']];
+        });
 
         $this->container = $this->createMock(\DI\Container::class);
         $this->twigRenderer = $this->createMock(TwigRenderer::class);
         
-        $this->container->method('get')
-            ->with(TwigRenderer::class)
-            ->willReturn($this->twigRenderer);
+        $this->container->method('get')->willReturnCallback(function($id) {
+            if ($id === TwigRenderer::class) return $this->twigRenderer;
+            if ($id === 'contact.mail') return $_SESSION['test_contact_mail'] ?? '';
+            return null;
+        });
 
         $refClass = new \ReflectionClass(HomeController::class);
         $property = $refClass->getProperty('container');
@@ -276,5 +279,80 @@ class HomeControllerGroupsTest extends TestCase
         $this->assertInstanceOf(Response::class, $response);
         $this->assertSame(302, $response->getStatusCode());
         $this->assertSame("Inscription réussie !", $_SESSION['success_message']);
+    }
+
+    public function testContactFormRendersContactPage(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'roles' => ['user']
+        ];
+
+        $this->router->method('match')->willReturnCallback(function() {
+            return ['target' => [HomeController::class, 'contactForm']];
+        });
+
+        $this->twigRenderer->method('render')
+            ->with('contact', $this->callback(fn($data) => is_array($data)))
+            ->willReturn('contact_form_html');
+
+        $response = $this->controller->contactForm();
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('contact_form_html', (string)$response->getBody());
+    }
+
+    public function testContactSubmitFailsWithEmptyFields(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'roles' => ['user']
+        ];
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getParsedBody')->willReturn([
+            'subject' => '',
+            'message' => ''
+        ]);
+
+        $response = $this->controller->contactSubmit($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertSame('/contact', $response->getHeaderLine('Location'));
+        $this->assertSame("Veuillez remplir tous les champs obligatoires.", $_SESSION['contact_error']);
+    }
+
+    public function testContactSubmitSendsEmailSuccessfully(): void
+    {
+        $_SESSION['user'] = [
+            'id' => 1,
+            'firstname' => 'Jean',
+            'name' => 'Dupont',
+            'username' => 'jdupont',
+            'roles' => ['user'],
+            'email' => 'jean@dupont.com'
+        ];
+        $_SESSION['test_contact_mail'] = 'admin@planning.net';
+
+        $uri = $this->createMock(\Psr\Http\Message\UriInterface::class);
+        $uri->method('getHost')->willReturn('planning-association.fr');
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getUri')->willReturn($uri);
+        $request->method('getParsedBody')->willReturn([
+            'subject' => 'Mon Sujet',
+            'message' => 'Mon Message'
+        ]);
+
+        $response = $this->controller->contactSubmit($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertSame('/contact', $response->getHeaderLine('Location'));
+        $this->assertTrue(isset($_SESSION['contact_success']) || isset($_SESSION['contact_error']));
+
+        unset($_SESSION['test_contact_mail']);
     }
 }

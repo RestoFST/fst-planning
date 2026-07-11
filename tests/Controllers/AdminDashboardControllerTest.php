@@ -248,55 +248,6 @@ class AdminDashboardControllerTest extends TestCase
         $this->assertStringContainsString('<rss version="2.0"', (string)$response->getBody());
     }
 
-    public function testUpdateHomeDaysCountUpdatesDatabase(): void
-    {
-        $_SESSION['user'] = [
-            'id' => 1,
-            'roles' => ['admin']
-        ];
-
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'home_days_count' => '15'
-        ]);
-
-        $stmt = $this->createMock(\PDOStatement::class);
-        $stmt->method('execute')->willReturn(true);
-        $this->pdo->method('prepare')->willReturn($stmt);
-
-        $response = $this->controller->updateHomeDaysCount($request);
-
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertSame(302, $response->getStatusCode());
-        $this->assertSame('/admin/dashboard', $response->getHeaderLine('Location'));
-        $this->assertSame("Le nombre de jours affichés sur la page d'accueil a été mis à jour à 15 jours.", $_SESSION['admin_success']);
-    }
-
-    public function testUpdateBannerUpdatesDatabase(): void
-    {
-        $_SESSION['user'] = [
-            'id' => 1,
-            'roles' => ['admin']
-        ];
-
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'banner_message' => 'Annonce importante !',
-            'banner_type' => 'warning',
-            'banner_active' => '1'
-        ]);
-
-        $stmt = $this->createMock(\PDOStatement::class);
-        $stmt->method('execute')->willReturn(true);
-        $this->pdo->method('prepare')->willReturn($stmt);
-
-        $response = $this->controller->updateBanner($request);
-
-        $this->assertInstanceOf(Response::class, $response);
-        $this->assertSame(302, $response->getStatusCode());
-        $this->assertSame('/admin/dashboard', $response->getHeaderLine('Location'));
-        $this->assertSame("La bannière d'information globale a été mise à jour avec succès.", $_SESSION['admin_success']);
-    }
 
     public function testSetMaintenanceBypassCookieSetsCookie(): void
     {

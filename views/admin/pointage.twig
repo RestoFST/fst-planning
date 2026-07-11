@@ -123,17 +123,19 @@
     </div>
 </div>
 
-{% if success %}
-    <div class="alert alert-success" role="alert">
-        <i class="fa-solid fa-circle-check"></i> {{ success }}
-    </div>
-{% endif %}
+<div id="js-alert-container">
+    {% if success %}
+        <div class="alert alert-success" role="alert">
+            <i class="fa-solid fa-circle-check"></i> {{ success }}
+        </div>
+    {% endif %}
 
-{% if error %}
-    <div class="alert alert-danger" role="alert">
-        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
-    </div>
-{% endif %}
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+        </div>
+    {% endif %}
+</div>
 
 {# Sélecteur de date (Bootstrap 3 Form Inline) #}
 <div class="well" style="background-color: #f8fafc; border-radius: 8px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 30px;">
@@ -168,9 +170,24 @@
 <script>
     const dateInput = document.getElementById('dateSelect');
     const resultsContainer = document.getElementById('pointage-results-container');
+    const alertContainer = document.getElementById('js-alert-container');
     const allUsers = {{ allUsers|json_encode|raw }};
 
-    function loadPointageData(dateStr) {
+    function showNotification(message, type) {
+        if (!alertContainer) return;
+        const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        alertContainer.innerHTML = `
+            <div class="alert alert-${type}" role="alert">
+                <i class="fa-solid ${icon}"></i> ${message}
+            </div>
+        `;
+        // Auto-clean after 4 seconds
+        setTimeout(() => {
+            alertContainer.innerHTML = '';
+        }, 4000);
+    }
+
+    function loadPointageData(dateStr, updateHistory = true) {
         if (!dateStr) return;
         
         resultsContainer.style.opacity = '0.5';
@@ -189,12 +206,26 @@
         .then(html => {
             resultsContainer.innerHTML = html;
             resultsContainer.style.opacity = '1';
+            
+            if (updateHistory) {
+                history.replaceState(null, '', `?date=${encodeURIComponent(dateStr)}`);
+            }
         })
         .catch(error => {
             console.error('Erreur AJAX:', error);
             resultsContainer.style.opacity = '1';
         });
     }
+
+    // Gestion du bouton précédent/suivant du navigateur (bouton Retour)
+    window.addEventListener('popstate', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        if (dateParam) {
+            dateInput.value = dateParam;
+            loadPointageData(dateParam, false);
+        }
+    });
 
     document.getElementById('btnPrev').addEventListener('click', function() {
         let currentVal = dateInput.value;
@@ -231,6 +262,55 @@
 
     dateInput.addEventListener('change', function() {
         loadPointageData(dateInput.value);
+    });
+
+    // Interception des formulaires de pointage et inscription en AJAX
+    resultsContainer.addEventListener('submit', function(e) {
+        if (e.target && e.target.tagName === 'FORM') {
+            const form = e.target;
+            
+            // Si le bénévole s'était déclaré absent, on demande confirmation
+            if (form.getAttribute('data-declared-absent') === 'true') {
+                const name = form.getAttribute('data-volunteer-name');
+                if (!confirm(`Attention : ${name} s'est déclaré absent. Êtes-vous sûr de vouloir le marquer présent ?`)) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+            
+            e.preventDefault();
+            const formData = new FormData(form);
+            
+            resultsContainer.style.opacity = '0.5';
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                return response.json().then(data => ({
+                    status: response.status,
+                    data: data
+                }));
+            })
+            .then(({ status, data }) => {
+                if (status >= 200 && status < 300) {
+                    showNotification(data.success, 'success');
+                    loadPointageData(dateInput.value);
+                } else {
+                    showNotification(data.error || "Une erreur est survenue.", 'danger');
+                    resultsContainer.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur AJAX:', error);
+                showNotification("Erreur de connexion au serveur.", 'danger');
+                resultsContainer.style.opacity = '1';
+            });
+        }
     });
 
     document.addEventListener("input", function(e) {
