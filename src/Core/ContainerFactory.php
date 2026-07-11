@@ -7,13 +7,19 @@ use DI\Container;
 
 class ContainerFactory
 {
+    private static ?Container $container = null;
+
     public static function build(): Container
     {
+        if (self::$container !== null) {
+            return self::$container;
+        }
+
         $config = new Config(); // Load .env variables
         $config->require(Config::REQUIRED_ENV_VARS);
 
         $builder = new ContainerBuilder();
-        $builder->addDefinitions(__DIR__ . '/../config.php');
+        $builder->addDefinitions(__DIR__ . '/../../config.php');
         $builder->addDefinitions([
             Config::class => $config
         ]);
@@ -24,6 +30,12 @@ class ContainerFactory
             $builder->writeProxiesToFile(true, __DIR__ . '/../tmp/proxies');
         }
 
-        return $builder->build();
+        self::$container = $builder->build();
+        return self::$container;
+    }
+
+    public static function getContainer(): ?Container
+    {
+        return self::$container;
     }
 }

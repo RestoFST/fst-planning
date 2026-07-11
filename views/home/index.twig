@@ -1,0 +1,168 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Planning des Bénévoles{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-md-12">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Planning des Inscriptions</h1>
+        <p class="text-muted" style="font-size: 15px;">Inscrivez-vous sur les créneaux du centre.</p>
+    </div>
+</div>
+
+{% if success %}
+    <div class="alert alert-success" role="alert">
+        <i class="fa-solid fa-circle-check"></i> {{ success }}
+    </div>
+{% endif %}
+
+{% if error %}
+    <div class="alert alert-danger" role="alert">
+        <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        {% for jour in creneauxParJour %}
+            <div class="panel panel-info" style="border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 30px;">
+                <div class="panel-heading" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; background-color: #f0fdf4; border-color: #d1fae5; color: #065f46; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                    <h3 class="panel-title" style="font-size: 16px; font-weight: bold;">
+                        <i class="fa-regular fa-calendar-days"></i> {{ jour.date_formatee }}
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        {% set aDesServicesDispos = false %}
+                        {% for s in jour.services %}
+                            {% if not s.ferme and not s.dejaInscrit %}
+                                {% set aDesServicesDispos = true %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if aDesServicesDispos %}
+                            <form action="{{ path('appointments.register_day') }}" method="POST" class="ajax-register-day-form" style="margin: 0;">
+                                <input type="hidden" name="date" value="{{ jour.date }}">
+                                <button type="submit" class="btn btn-xs btn-success" style="background-color: #10b981; border-color: #10b981; font-weight: bold; font-size: 11px;">
+                                    <i class="fa-solid fa-calendar-check"></i> Je serai présent pour toute la journée
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        <span class="label label-success" style="background-color: #047857;">{{ jour.date|date("d/m/Y") }}</span>
+                    </div>
+                </div>
+                
+                <div class="panel-body" style="padding: 20px;">
+                    {% if jour.services is empty %}
+                        <p class="text-muted" style="margin: 0; font-style: italic;">Aucune activité ou service programmé pour ce jour.</p>
+                    {% else %}
+                        <div class="row">
+                            {% for service in jour.services %}
+                                {% include 'home/_service_card.twig' with {'service': service, 'jour': jour} %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('submit', function(e) {
+        if (e.target && e.target.classList.contains('ajax-registration-form')) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const button = form.querySelector('button[type="submit"]');
+            
+            if (button) {
+                button.disabled = true;
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Traitement...';
+            }
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+                throw new Error('Erreur lors du traitement de la demande.');
+            })
+            .then(html => {
+                const temp = document.createElement('div');
+                temp.innerHTML = html.trim();
+                const newCard = temp.firstChild;
+                const cardId = newCard.id;
+                
+                const oldCard = document.getElementById(cardId);
+                if (oldCard) {
+                    oldCard.outerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('Erreur AJAX:', error);
+                alert('Une erreur est survenue lors de l\'inscription ou de la désinscription. Veuillez réessayer.');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            });
+        }
+
+        // Inscription groupée pour toute la journée
+        if (e.target && e.target.classList.contains('ajax-register-day-form')) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const button = form.querySelector('button[type="submit"]');
+            
+            if (button) {
+                button.disabled = true;
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Inscription...';
+            }
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Erreur lors de l\'inscription groupée.');
+            })
+            .then(data => {
+                if (data.success && data.cards) {
+                    data.cards.forEach(card => {
+                        const oldCard = document.getElementById(card.id);
+                        if (oldCard) {
+                            oldCard.outerHTML = card.html;
+                        }
+                    });
+                    form.remove(); // Retirer le bouton d'inscription globale pour ce jour
+                }
+            })
+            .catch(error => {
+                console.error('Erreur AJAX:', error);
+                alert('Une erreur est survenue lors de l\'inscription groupée. Veuillez réessayer.');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

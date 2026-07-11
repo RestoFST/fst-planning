@@ -1,0 +1,150 @@
+<h2 style="font-size: 18px; font-weight: bold; color: #475569; margin-top: 0; margin-bottom: 20px;">
+    <i class="fa-solid fa-calendar-check text-primary"></i> Créneaux du {{ dateSelectionneeFormatee }}
+</h2>
+
+{% for creneau in creneaux %}
+    <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;">
+        <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="panel-title" style="font-size: 15px; font-weight: bold; color: #1e293b;">
+                <i class="fa-solid fa-calendar-day text-success" style="margin-right: 5px;"></i> {{ creneau.service_name }}
+                {% if creneau.hours %}
+                    <span style="font-weight: normal; color: #64748b; font-size: 13px; margin-left: 8px;">
+                        <i class="fa-solid fa-clock" style="font-size: 11px;"></i> {{ creneau.hours }}
+                    </span>
+                {% endif %}
+            </h3>
+            
+            {% set totalInscrits = creneau.inscrits|length %}
+            {% set totalPresents = 0 %}
+            {% set totalAbsents = 0 %}
+            {% for inscrit in creneau.inscrits %}
+                {% if inscrit.presence == 'present' %}
+                    {% set totalPresents = totalPresents + 1 %}
+                {% elseif inscrit.presence == 'absent' %}
+                    {% set totalAbsents = totalAbsents + 1 %}
+                {% endif %}
+            {% endfor %}
+            
+            <div style="display: flex; gap: 8px; font-size: 11px;">
+                <span class="label label-info" style="font-weight: bold; padding: 4px 8px; background-color: #0284c7;" title="Inscrits">
+                    <i class="fa-solid fa-users"></i> {{ totalInscrits }} {{ totalInscrits > 1 ? 'inscrits' : 'inscrit' }}
+                </span>
+                <span class="label label-success" style="font-weight: bold; padding: 4px 8px; background-color: #22c55e;" title="Présents">
+                    <i class="fa-solid fa-check"></i> {{ totalPresents }} {{ totalPresents > 1 ? 'présents' : 'présent' }}
+                </span>
+                <span class="label label-danger" style="font-weight: bold; padding: 4px 8px; background-color: #ef4444;" title="Absents">
+                    <i class="fa-solid fa-xmark"></i> {{ totalAbsents }} {{ totalAbsents > 1 ? 'absents' : 'absent' }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover pointage-table" style="margin-bottom: 0;">
+                <thead>
+                    <tr style="color: #64748b; font-size: 12px; text-transform: uppercase;">
+                        <th style="padding: 12px 20px;">Bénévole</th>
+                        <th style="padding: 12px 20px;">Statut</th>
+                        <th style="padding: 12px 20px; text-align: right;">Action de Pointage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscrit in creneau.inscrits %}
+                        <tr>
+                            <td style="padding: 12px 20px; font-weight: bold; color: #1e293b; vertical-align: middle;">
+                                {{ inscrit.firstname }} {{ inscrit.name }}
+                            </td>
+                            <td style="padding: 12px 20px; vertical-align: middle;">
+                                {% if inscrit.presence == 'present' %}
+                                    <span class="label label-success" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Présent</span>
+                                {% elseif inscrit.presence == 'absent' %}
+                                    {% if inscrit.pointed == 0 %}
+                                        <span class="label label-warning" style="padding: 4px 8px; font-size: 11px; background-color: #f97316;"><i class="fa-solid fa-user-xmark"></i> Déclaré absent</span>
+                                    {% else %}
+                                        <span class="label label-danger" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> Pointé absent</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="label label-warning" style="padding: 4px 8px; font-size: 11px;"><i class="fa-solid fa-clock"></i> En attente</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 12px 20px; text-align: right; vertical-align: middle;">
+                                <div style="display: inline-flex; gap: 5px; justify-content: flex-end;">
+                                    {# Formulaire Présent #}
+                                    <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
+                                        <input type="hidden" name="aid" value="{{ creneau.aid }}">
+                                        <input type="hidden" name="uid" value="{{ inscrit.uid }}">
+                                        <input type="hidden" name="presence" value="present">
+                                        <input type="hidden" name="date" value="{{ dateSelectionnee }}">
+                                        <button type="submit" class="btn btn-success btn-sm" {% if inscrit.presence == 'present' %}disabled style="opacity: 0.5;"{% endif %}>
+                                            <i class="fa-solid fa-check"></i> Présent
+                                        </button>
+                                    </form>
+
+                                    {# Formulaire Absent #}
+                                    <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
+                                        <input type="hidden" name="aid" value="{{ creneau.aid }}">
+                                        <input type="hidden" name="uid" value="{{ inscrit.uid }}">
+                                        <input type="hidden" name="presence" value="absent">
+                                        <input type="hidden" name="date" value="{{ dateSelectionnee }}">
+                                        <button type="submit" class="btn btn-danger btn-sm" {% if inscrit.presence == 'absent' %}disabled style="opacity: 0.5;"{% endif %}>
+                                            <i class="fa-solid fa-xmark"></i> Absent
+                                        </button>
+                                    </form>
+
+                                    {# Réinitialiser en attente #}
+                                    {% if inscrit.presence != 'en_attente' %}
+                                        <form action="{{ path('admin.pointage.update') }}" method="POST" style="display: inline; margin: 0;">
+                                            <input type="hidden" name="aid" value="{{ creneau.aid }}">
+                                            <input type="hidden" name="uid" value="{{ inscrit.uid }}">
+                                            <input type="hidden" name="presence" value="en_attente">
+                                            <input type="hidden" name="date" value="{{ dateSelectionnee }}">
+                                            <button type="submit" class="btn btn-default btn-sm" title="Réinitialiser">
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="panel-footer" style="background-color: #fafaf9; border-top: 1px solid #e2e8f0; padding: 12px 20px;">
+            <form action="{{ path('admin.pointage.register') }}" method="POST" class="form-inline" id="form-register-{{ creneau.aid }}" style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0;">
+                <input type="hidden" name="aid" value="{{ creneau.aid }}">
+                <input type="hidden" name="date" value="{{ dateSelectionnee }}">
+                <input type="hidden" name="uid" id="uid-{{ creneau.aid }}" required>
+                
+                <div class="form-group" style="margin-bottom: 0; min-width: 280px; position: relative;">
+                    <div class="input-group input-group-sm" style="width: 100%;">
+                        <span class="input-group-addon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" 
+                               class="form-control volunteer-search-input" 
+                               id="search-{{ creneau.aid }}" 
+                               data-aid="{{ creneau.aid }}" 
+                               data-inscrits="[{% for inscrit in creneau.inscrits %}{{ inscrit.uid }}{% if not loop.last %},{% endif %}{% endfor %}]"
+                               placeholder="Saisir nom ou prénom..." 
+                               autocomplete="off" 
+                               style="height: 32px; border-radius: 0 4px 4px 0;">
+                    </div>
+                    
+                    <!-- Liste des suggestions -->
+                    <div class="volunteer-suggestions-box" id="suggestions-{{ creneau.aid }}" style="display: none; position: absolute; left: 0; right: 0; top: 34px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 4px; background: white;">
+                        <ul class="dropdown-menu" style="display: block; position: static; width: 100%; float: none; margin: 0; max-height: 200px; overflow-y: auto; border-radius: 4px;">
+                            <!-- Rempli en JS -->
+                        </ul>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-info btn-sm" id="btn-submit-{{ creneau.aid }}" style="height: 32px; background-color: #0284c7; border-color: #0284c7;" disabled>
+                    <i class="fa-solid fa-plus"></i> Inscrire
+                </button>
+            </form>
+        </div>
+    </div>
+{% else %}
+    <div class="jumbotron text-center" style="background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; padding: 40px 20px;">
+        <i class="fa-solid fa-calendar-xmark text-danger" style="font-size: 48px; margin-bottom: 15px;"></i>
+        <h3 style="font-weight: bold; color: #1e293b; margin-bottom: 10px;">Aucun créneau ce jour</h3>
+        <p style="font-size: 15px; color: #64748b;">Il n'y a pas de créneau ou de service planifié pour le {{ dateSelectionnee|date("d/m/Y") }}.</p>
+    </div>
+{% endfor %}

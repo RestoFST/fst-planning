@@ -9,10 +9,36 @@ class Router
 {
     private AltoRouter $router;
     private array|bool $matchedRoute = [];
+    private static ?self $instance = null;
 
     public function __construct()
     {
         $this->router = new AltoRouter();
+        
+        // Lire le basepath depuis les variables d'environnement (.env)
+        $basePath = getenv('APP_BASEPATH');
+        if ($basePath === false) {
+            $basePath = $_ENV['APP_BASEPATH'] ?? '';
+        }
+        $basePath = trim($basePath);
+
+        // Nettoyer le basePath pour AltoRouter (pas de slash final)
+        if ($basePath !== '/' && $basePath !== '\\') {
+            $basePath = rtrim($basePath, '/\\');
+        } else {
+            $basePath = '';
+        }
+        
+        if (!empty($basePath)) {
+            $this->setBasePath($basePath);
+        }
+
+        self::$instance = $this;
+    }
+
+    public static function getInstance(): ?self
+    {
+        return self::$instance;
     }
 
     public function setBasePath(string $basePath): void
@@ -22,11 +48,7 @@ class Router
 
     public function registerController(Controller $controller): void
     {
-        try {
-            $reflectionClass = new \ReflectionClass($controller::class);
-        } catch (\ReflectionException $exception) {
-            throw new \InvalidArgumentException(sprintf('Controller class "%s" does not exist.', $controller::class), 0, $exception);
-        }
+        $reflectionClass = new \ReflectionClass($controller::class);
 
         $attributes = $reflectionClass->getAttributes(\App\Attribute\RouteAttribute::class);
 
@@ -52,9 +74,12 @@ class Router
         foreach ($attributes as $attribute) {
             /** @var \App\Attribute\RouteAttribute $routeAttribute */
             $routeAttribute = $attribute->newInstance();
+            $path = '/' . ltrim($prefix . '/' . ltrim($routeAttribute->getPath(), '/'), '/');
+            $path = preg_replace('#/{2,}#', '/', $path);
+            
             $this->router->map(
                 $routeAttribute->getMethod(),
-                $prefix . '/' . ltrim($routeAttribute->getPath(), '/'),
+                $path,
                 [$controller, $method->getName()],
                 $routeAttribute->getName()
             );

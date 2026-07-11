@@ -17,7 +17,7 @@ class Config
         $this->dotenv->load();
     }
 
-    public function require(...$keys): Validator
+    public function require(string|array $keys): Validator
     {
         return $this->dotenv->required($keys);
     }

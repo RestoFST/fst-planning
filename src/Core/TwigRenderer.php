@@ -11,6 +11,9 @@ class TwigRenderer implements RendererInterface
 
     public function render(string $template, array $data = []): string
     {
+        if (!str_ends_with($template, '.twig')) {
+            $template .= '.twig';
+        }
         return $this->twig->render($template, $data);
     }
 }

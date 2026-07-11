@@ -8,13 +8,12 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD | Attribute::TARGET_CLASS)]
 class RenderAttribute
 {
-
-    public function __construct(private RendererInterface $renderer)
+    public function __construct(private string $rendererClass)
     {
     }
 
-    public function render(string $view, array $data = []): string
+    public function getRendererClass(): string
     {
-        return $this->renderer->render($view, $data);
+        return $this->rendererClass;
     }
 }

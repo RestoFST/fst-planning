@@ -25,7 +25,7 @@ class LogManager
     /**
      * Récupère ou crée un canal de log spécifique
      */
-    public function channel(string $name = 'app'): LoggerInterface
+    public function channel(string $name = 'app'): Logger
     {
         if (isset($this->channels[$name])) {
             return $this->channels[$name];

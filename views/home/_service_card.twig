@@ -1,0 +1,181 @@
+<div class="col-md-4 col-sm-6" style="margin-bottom: 20px;" id="service-card-{{ service.id }}-{{ jour.date }}">
+    <div class="thumbnail" style="padding: 15px; border-radius: 6px; background-color: #fafaf9; margin-bottom: 0; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 0 4px rgba(0,0,0,0.02);">
+        <div>
+            {% set inscritsActifs = 0 %}
+            {% for inscrit in service.inscrits %}
+                {% if inscrit.presence != 'absent' %}
+                    {% set inscritsActifs = inscritsActifs + 1 %}
+                {% endif %}
+            {% endfor %}
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                <h4 style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b; width: 70%;">
+                    {{ service.name }}
+                </h4>
+                {% if service.ferme %}
+                    <span class="label label-danger" title="Motif : {{ service.raisonFermeture }}"><i class="fa-solid fa-ban"></i> Fermé</span>
+                {% else %}
+                    {% if service.optimal_count %}
+                        {% if inscritsActifs >= service.optimal_count %}
+                            <span class="label label-success" style="background-color: #10b981;" title="Effectif optimal atteint"><i class="fa-solid fa-circle-check"></i> {{ inscritsActifs }}/{{ service.optimal_count }}</span>
+                        {% else %}
+                            <span class="label label-warning" style="background-color: #f59e0b;" title="Recherche bénévoles (optimal : {{ service.optimal_count }})"><i class="fa-solid fa-triangle-exclamation"></i> {{ inscritsActifs }}/{{ service.optimal_count }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="label label-primary" style="background-color: #6366f1;">Actif</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            {% if service.hours %}
+                <div style="font-size: 12px; color: #475569; margin-bottom: 5px;">
+                    <i class="fa-solid fa-clock" style="color: #64748b; font-size: 11px; margin-right: 3px;"></i> {{ service.hours }}
+                </div>
+            {% endif %}
+            
+            {% if service.description %}
+                <div style="font-size: 11px; color: #64748b; line-height: 1.4; margin-bottom: 10px; font-style: italic;">
+                    {{ service.description }}
+                </div>
+            {% endif %}
+
+            {% if service.groups is not empty %}
+                <div style="margin-top: 5px; margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px;">
+                    {% for gname in service.groups %}
+                        <span class="label label-info" style="font-size: 10px; font-weight: bold; background-color: #3b82f6; padding: 3px 6px;" title="Accès réservé au groupe {{ gname }}">
+                            <i class="fa-solid fa-users"></i> {{ gname }}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div style="margin: 10px 0;">
+                <h5 style="font-size: 11px; text-transform: uppercase; color: {% if service.optimal_count %}{% if inscritsActifs >= service.optimal_count %}#10b981{% else %}#d97706{% endif %}{% else %}#64748b{% endif %}; font-weight: bold; letter-spacing: 0.05em; margin-bottom: 8px;">
+                    Bénévoles inscrits : {{ inscritsActifs }}{% if service.optimal_count %} / {{ service.optimal_count }} (optimal){% endif %}
+                </h5>
+                {% if service.inscrits is empty %}
+                    <p class="text-muted" style="font-size: 13px; font-style: italic; margin-bottom: 0;">Aucun bénévole inscrit.</p>
+                {% else %}
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px; max-height: 80px; overflow-y: auto;">
+                        {% set estEncadrant = 'admin' in app_user.roles or 'responsable' in app_user.roles or 'accueil' in app_user.roles %}
+                        {% for inscrit in service.inscrits %}
+                            {% if inscrit.presence == 'absent' and inscrit.pointed == 0 %}
+                                {# Déclaré absent à l'avance (toujours public) #}
+                                <span class="label label-danger" 
+                                      title="Déclaré absent" 
+                                      style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 6px; font-size: 11px; text-decoration: line-through; opacity: 0.8; background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5;">
+                                    <i class="fa-solid fa-user-slash" style="font-size: 9px;"></i>
+                                    {{ inscrit.firstname }} {{ inscrit.name }}
+                                </span>
+                            {% else %}
+                                {# Présent, ou pointé absent, ou en attente #}
+                                {% if estEncadrant or inscrit.id == app_user.id %}
+                                    {# Les encadrants ou l'utilisateur lui-même voient le vrai statut de pointage #}
+                                    {% if inscrit.presence == 'present' %}
+                                        <span class="label label-success" 
+                                              title="Pointage : Présent" 
+                                              style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 6px; font-size: 11px;">
+                                            <i class="fa-solid fa-user" style="font-size: 9px;"></i>
+                                            {{ inscrit.firstname }} {{ inscrit.name }}
+                                            <i class="fa-solid fa-check" style="font-size: 9px; margin-left: 2px;"></i>
+                                        </span>
+                                    {% elseif inscrit.presence == 'absent' and inscrit.pointed == 1 %}
+                                        <span class="label label-danger" 
+                                              title="Pointage : Pointé absent" 
+                                              style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 6px; font-size: 11px;">
+                                            <i class="fa-solid fa-user" style="font-size: 9px;"></i>
+                                            {{ inscrit.firstname }} {{ inscrit.name }}
+                                            <i class="fa-solid fa-xmark" style="font-size: 9px; margin-left: 2px;"></i>
+                                        </span>
+                                    {% else %}
+                                        <span class="label label-info" 
+                                              title="Pointage : En attente" 
+                                              style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 6px; font-size: 11px;">
+                                            <i class="fa-solid fa-user" style="font-size: 9px;"></i>
+                                            {{ inscrit.firstname }} {{ inscrit.name }}
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    {# Les autres bénévoles ne voient que "Inscrit" (bleu) pour cacher les absences pointées ou les statuts internes de pointage #}
+                                    <span class="label label-info" 
+                                          title="Inscrit" 
+                                          style="display: inline-flex; align-items: center; gap: 3px; padding: 4px 6px; font-size: 11px;">
+                                        <i class="fa-solid fa-user" style="font-size: 9px;"></i>
+                                        {{ inscrit.firstname }} {{ inscrit.name }}
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: flex-end; align-items: center; gap: 5px; flex-wrap: wrap;">
+            {% if service.ferme %}
+                <span class="text-danger" style="font-size: 12px; font-weight: bold; color: #ef4444;" title="Motif de fermeture : {{ service.raisonFermeture }}">
+                    <i class="fa-solid fa-triangle-exclamation"></i> {{ service.raisonFermeture }}
+                </span>
+            {% elseif service.dejaInscrit %}
+                {% if service.presenceUtilisateurConnecte == 'present' %}
+                    <span class="text-muted" style="font-size: 12px; font-weight: bold; color: #94a3b8;" title="Votre présence a été validée par l'accueil, désinscription impossible.">
+                        <i class="fa-solid fa-lock"></i> Pointage effectué
+                    </span>
+                {% elseif service.presenceUtilisateurConnecte == 'absent' %}
+                    {# L'utilisateur s'est marqué comme absent #}
+                    <form action="{{ path('appointments.register') }}" method="POST" class="ajax-registration-form" style="margin: 0;">
+                        <input type="hidden" name="date" value="{{ jour.date }}">
+                        <input type="hidden" name="sid" value="{{ service.id }}">
+                        <input type="hidden" name="hours" value="{{ service.hours }}">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-user-check"></i> Je serai présent
+                        </button>
+                    </form>
+                    
+                    <form action="{{ path('appointments.unregister') }}" method="POST" class="ajax-registration-form" onsubmit="return confirm('Voulez-vous vraiment retirer votre déclaration d\'absence de ce créneau ?');" style="margin: 0;">
+                        <input type="hidden" name="aid" value="{{ service.aid }}">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-trash-can"></i> Retirer
+                        </button>
+                    </form>
+                {% else %}
+                    {# L'utilisateur est inscrit mais en attente de pointage #}
+                    <form action="{{ path('appointments.set_absent') }}" method="POST" class="ajax-registration-form" style="margin: 0;">
+                        <input type="hidden" name="date" value="{{ jour.date }}">
+                        <input type="hidden" name="sid" value="{{ service.id }}">
+                        <input type="hidden" name="hours" value="{{ service.hours }}">
+                        <button type="submit" class="btn btn-default btn-sm text-danger" style="border-color: #fca5a5;">
+                            <i class="fa-solid fa-user-xmark"></i> Absent
+                        </button>
+                    </form>
+
+                    <form action="{{ path('appointments.unregister') }}" method="POST" class="ajax-registration-form" onsubmit="return confirm('Voulez-vous vraiment vous désinscrire de ce créneau ?');" style="margin: 0;">
+                        <input type="hidden" name="aid" value="{{ service.aid }}">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-user-minus"></i> Se désinscrire
+                        </button>
+                    </form>
+                {% endif %}
+            {% else %}
+                {# L'utilisateur n'est pas encore inscrit #}
+                <form action="{{ path('appointments.register') }}" method="POST" class="ajax-registration-form" style="margin: 0;">
+                    <input type="hidden" name="date" value="{{ jour.date }}">
+                    <input type="hidden" name="sid" value="{{ service.id }}">
+                    <input type="hidden" name="hours" value="{{ service.hours }}">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fa-solid fa-user-plus"></i> Je serai présent
+                    </button>
+                </form>
+
+                <form action="{{ path('appointments.set_absent') }}" method="POST" class="ajax-registration-form" style="margin: 0;">
+                    <input type="hidden" name="date" value="{{ jour.date }}">
+                    <input type="hidden" name="sid" value="{{ service.id }}">
+                    <input type="hidden" name="hours" value="{{ service.hours }}">
+                    <button type="submit" class="btn btn-default btn-sm text-danger" style="border-color: #fca5a5;">
+                        <i class="fa-solid fa-user-xmark"></i> Absent
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>

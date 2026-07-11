@@ -2,8 +2,17 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('planning_session');
+    session_start();
+}
+
 use App\Core\Router;
 use App\Controllers\HomeController;
+use App\Controllers\AuthController;
+use App\Controllers\AdminController;
+use App\Controllers\AdminDashboardController;
+use App\Core\ContainerFactory;
 use GuzzleHttp\Psr7\ServerRequest;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -11,15 +20,28 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Relay\Relay;
 
-$router = new Router();
-$router->registerController(new HomeController());
+$container = ContainerFactory::build();
+
+// Reconnexion automatique "Se souvenir de moi"
+if (empty($_SESSION['user']) && !empty($_COOKIE['remember_me'])) {
+    $container->get(AuthController::class)->autoLoginWithCookie();
+}
+
+$router = $container->get(Router::class);
+$router->registerController($container->get(HomeController::class));
+$router->registerController($container->get(AuthController::class));
+$router->registerController($container->get(AdminController::class));
+$router->registerController($container->get(AdminDashboardController::class));
 
 $match = $router->match();
+
+//var_dump($_SERVER['REQUEST_URI']);
 
 if ($match) {
     try {
         $request = ServerRequest::fromGlobals();
         $queue = [];
+        $queue[] = $container->get(\App\Middleware\MaintenanceMiddleware::class);
 
         $reflexClass = new ReflectionClass($match['target'][0]);
         $middlewares = $reflexClass->getAttributes(MiddlewareInterface::class,ReflectionAttribute::IS_INSTANCEOF);

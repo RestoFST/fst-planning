@@ -7,7 +7,7 @@ use PDO;
 
 class DB
 {
-    private PDO $pdo;
+    private PrefixedPDO $pdo;
 
     public function getConnection(): PDO
     {
@@ -18,11 +18,12 @@ class DB
         #[Inject('db.config')] array $config
     )
     {
-        $this->pdo = new PDO(
+        $this->pdo = new PrefixedPDO(
             'mysql:host=' . $config['host'] . ';dbname=' . $config['name'],
             $config['user'],
-            $config['pass']
+            $config['pass'],
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+            $config['prefix'] ?? ''
         );
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 }

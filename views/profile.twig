@@ -1,0 +1,146 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Mon Profil - Planning Bénévoles{% endblock %}
+
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    /* Paddings */
+    .panel-body {
+        padding: 20px 15px !important;
+    }
+    
+    /* Boutons de soumission du profil */
+    .panel-body form > div[style*="display: flex"] {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+    
+    .panel-body form > div[style*="display: flex"] a,
+    .panel-body form > div[style*="display: flex"] button {
+        width: 100% !important;
+        margin: 0 !important;
+        height: 45px !important;
+        font-size: 14px !important;
+    }
+    
+    /* Bouton déconnexion globale */
+    .panel-danger form button {
+        width: 100% !important;
+        height: 45px !important;
+        font-size: 14px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" style="margin-bottom: 25px;">
+    <div class="col-md-8 col-md-offset-2">
+        <h1 style="font-weight: 700; color: #1e293b; margin-top: 10px;">Mon Profil</h1>
+        <p class="text-muted" style="font-size: 15px;">Gérez vos informations de connexion et sécurisez votre compte.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                <i class="fa-solid fa-circle-check"></i> {{ success }}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+            </div>
+        {% endif %}
+
+        <div class="panel panel-default" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 40px;">
+            <div class="panel-heading" style="background-color: #f8fafc; font-weight: bold; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
+                <i class="fa-solid fa-user-gear text-primary" style="margin-right: 5px;"></i> Modifier mes identifiants
+            </div>
+            
+            <div class="panel-body" style="padding: 25px 30px;">
+                <form action="{{ path('profile.submit') }}" method="POST" style="margin: 0;">
+                    
+                    <!-- Username -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="profileUsername" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Nom d'utilisateur *</label>
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa-solid fa-user text-muted"></i></span>
+                            <input type="text" 
+                                   id="profileUsername" 
+                                   name="username" 
+                                   value="{{ app_user.username }}" 
+                                   class="form-control" 
+                                   required 
+                                   style="height: 40px;">
+                        </div>
+                        <p class="help-block" style="font-size: 11px; margin-top: 5px; color: #64748b;">Votre identifiant unique pour vous connecter.</p>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="profilePassword" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Nouveau mot de passe</label>
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" 
+                                   id="profilePassword" 
+                                   name="password" 
+                                   placeholder="Laisser vide si inchangé" 
+                                   class="form-control" 
+                                   style="height: 40px;">
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label for="profilePasswordConfirm" style="font-weight: 600; color: #475569; margin-bottom: 5px;">Confirmer le nouveau mot de passe</label>
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" 
+                                   id="profilePasswordConfirm" 
+                                   name="password_confirm" 
+                                   placeholder="Laisser vide si inchangé" 
+                                   class="form-control" 
+                                   style="height: 40px;">
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid #f1f5f9; padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <a href="{{ path('index') }}" class="btn btn-default btn-lg" style="font-size: 14px; font-weight: 600; height: 44px; display: inline-flex; align-items: center; justify-content: center;">
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg" style="background-color: #6366f1; border-color: #6366f1; font-weight: 600; font-size: 14px; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i class="fa-solid fa-floppy-disk"></i> Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Panel Sécurité / Déconnexion globale -->
+        <div class="panel panel-danger" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #fee2e2; overflow: hidden;">
+            <div class="panel-heading" style="background-color: #fef2f2; color: #991b1b; font-weight: bold; padding: 15px 20px; border-bottom: 1px solid #fee2e2;">
+                <i class="fa-solid fa-shield-halved" style="margin-right: 5px;"></i> Sécurité du compte
+            </div>
+            <div class="panel-body" style="padding: 25px 30px;">
+                <h4 style="font-weight: 600; color: #1e293b; margin-top: 0; margin-bottom: 10px;">Déconnexion de tous les appareils</h4>
+                <p class="text-muted" style="font-size: 13px; margin-bottom: 20px; line-height: 1.5;">
+                    Si vous avez oublié de vous déconnecter sur un ordinateur public ou si vous suspectez une activité inhabituelle, vous pouvez invalider toutes vos sessions de connexion automatique. Vous serez déconnecté de tous vos autres appareils.
+                </p>
+                <form action="{{ path('profile.logout_devices') }}" method="POST" onsubmit="return confirm('Voulez-vous vraiment déconnecter tous vos appareils ? Vous devrez vous reconnecter sur chacun d\'eux.');" style="margin: 0;">
+                    <button type="submit" class="btn btn-danger" style="font-weight: 600; font-size: 13px; height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-power-off"></i> Se déconnecter de tous mes appareils
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

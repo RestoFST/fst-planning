@@ -69,6 +69,10 @@ class RouterTest extends TestCase
 #[RouteAttribute('GET', '/api')]
 class DummyController extends BaseController
 {
+    public function __construct()
+    {
+    }
+
     #[RouteAttribute('GET', '/list', 'dummy_list')]
     public function list(): void
     {

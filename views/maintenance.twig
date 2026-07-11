@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance en cours - Planning Bénévoles</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="family">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        
+        .maintenance-card {
+            background: #ffffff;
+            padding: 50px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 500px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .icon-wrapper {
+            font-size: 64px;
+            color: #6366f1;
+            margin-bottom: 25px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #0f172a;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .footer-note {
+            font-size: 13px;
+            color: #94a3b8;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 20px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-card">
+        <div class="icon-wrapper">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+        </div>
+        <h1>Maintenance en cours</h1>
+        <p>{{ message }}</p>
+        <div class="footer-note">
+            <i class="fa-solid fa-heart text-danger"></i> Merci pour votre patience et votre engagement !
+        </div>
+    </div>
+</body>
+</html>

@@ -11,7 +11,7 @@ class RouteAttribute
     private string $path;
     private ?string $name;
 
-    public function __construct(string $method, string $path, ?string $name = null)
+    public function __construct(string $method = 'GET', string $path = '', ?string $name = null)
     {
         $this->method = $method;
         $this->path = $path;
