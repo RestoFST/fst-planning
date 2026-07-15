@@ -18,7 +18,7 @@ class PrefixedPDOTest extends TestCase
         $ref->setAccessible(true);
         $ref->setValue($pdo, '');
 
-        $sql = "SELECT * FROM services JOIN appoinment ON services.id = appoinment.sid";
+        $sql = "SELECT * FROM services JOIN appointment ON services.id = appointment.sid";
         $this->assertSame($sql, $pdo->prefixQuery($sql));
     }
 
@@ -33,16 +33,16 @@ class PrefixedPDOTest extends TestCase
         $ref->setAccessible(true);
         $ref->setValue($pdo, 'tst_');
 
-        $sql = "SELECT s.*, a.date FROM services s JOIN appoinment a ON s.id = a.sid WHERE s.id = 1";
-        $expected = "SELECT s.*, a.date FROM tst_services s JOIN tst_appoinment a ON s.id = a.sid WHERE s.id = 1";
+        $sql = "SELECT s.*, a.date FROM services s JOIN appointment a ON s.id = a.sid WHERE s.id = 1";
+        $expected = "SELECT s.*, a.date FROM tst_services s JOIN tst_appointment a ON s.id = a.sid WHERE s.id = 1";
         $this->assertSame($expected, $pdo->prefixQuery($sql));
 
         $sql2 = "INSERT INTO appointments_users (aid, uid) VALUES (1, 2)";
         $expected2 = "INSERT INTO tst_appointments_users (aid, uid) VALUES (1, 2)";
         $this->assertSame($expected2, $pdo->prefixQuery($sql2));
 
-        $sql3 = "SELECT * FROM services_workdays JOIN services_holyday ON services_workdays.sid = services_holyday.sid";
-        $expected3 = "SELECT * FROM tst_services_workdays JOIN tst_services_holyday ON tst_services_workdays.sid = tst_services_holyday.sid";
+        $sql3 = "SELECT * FROM services_workdays JOIN services_holiday ON services_workdays.sid = services_holiday.sid";
+        $expected3 = "SELECT * FROM tst_services_workdays JOIN tst_services_holiday ON tst_services_workdays.sid = tst_services_holiday.sid";
         $this->assertSame($expected3, $pdo->prefixQuery($sql3));
     }
 

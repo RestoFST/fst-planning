@@ -95,7 +95,7 @@ class AuthControllerTest extends TestCase
             'firstname' => 'Jean',
             'username' => 'testuser',
             'password' => password_hash('secret', PASSWORD_DEFAULT),
-            'roles' => '["user"]',
+            'role' => 'user',
             'email' => 'jean@test.com',
             'phone' => '0600000000',
             'lastModifiedPassword' => '2026-07-09 12:00:00'
@@ -135,7 +135,7 @@ class AuthControllerTest extends TestCase
             'name' => 'Dupont',
             'firstname' => 'Jean',
             'username' => 'testuser',
-            'roles' => '["user"]',
+            'role' => 'user',
             'email' => 'jean@test.com',
             'phone' => '0600000000',
             'lastModifiedPassword' => '2026-07-09 12:00:00'

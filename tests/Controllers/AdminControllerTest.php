@@ -66,7 +66,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 12,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -107,7 +107,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin']
+            'role' => 'admin'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -150,7 +150,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 12,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -191,7 +191,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         // Mock 1. Query holidays
@@ -228,7 +228,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -273,7 +273,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -297,7 +297,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -334,7 +334,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -372,7 +372,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $stmtOpenings = $this->createMock(\PDOStatement::class);
@@ -416,7 +416,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -454,7 +454,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -497,7 +497,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -536,7 +536,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -579,7 +579,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -631,7 +631,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $stmt = $this->createMock(\PDOStatement::class);
@@ -655,7 +655,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -679,7 +679,7 @@ class AdminControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);

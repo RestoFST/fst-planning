@@ -66,7 +66,7 @@ class AdminDashboardControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin']
+            'role' => 'admin'
         ];
 
         $stmtToken = $this->createMock(\PDOStatement::class);
@@ -114,7 +114,7 @@ class AdminDashboardControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin'],
+            'role' => 'admin',
             'rss_token' => 'old_token'
         ];
 
@@ -135,7 +135,7 @@ class AdminDashboardControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin']
+            'role' => 'admin'
         ];
 
         $stmtToken = $this->createMock(\PDOStatement::class);
@@ -179,7 +179,7 @@ class AdminDashboardControllerTest extends TestCase
             'username' => 'test',
             'email' => 'test@test.com',
             'phone' => '0102030405',
-            'roles' => '["user"]',
+            'role' => 'user',
             'lastModifiedPassword' => null
         ]);
 
@@ -253,7 +253,7 @@ class AdminDashboardControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin']
+            'role' => 'admin'
         ];
 
         putenv('APP_MAINTENANCE_SECRET=bypass_key_abc');
@@ -270,7 +270,7 @@ class AdminDashboardControllerTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['admin']
+            'role' => 'admin'
         ];
 
         $response = $this->controller->disableMaintenance();

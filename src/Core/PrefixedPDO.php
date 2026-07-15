@@ -26,14 +26,18 @@ class PrefixedPDO extends PDO
         }
 
         $tables = [
-            'appointments_users', // Doit être en premier pour éviter que 'appoinment' ne matche partiellement
-            'appoinment',
+            'appointments_users',
+            'appointment',
             'remember_tokens',
-            'services_holyday',
+            'services_holiday',
             'services_workdays',
             'services_opening',
             'services',
             'settings',
+            'users_groups',
+            'services_groups',
+            'services_opening_groups',
+            'groups',
             'users'
         ];
 

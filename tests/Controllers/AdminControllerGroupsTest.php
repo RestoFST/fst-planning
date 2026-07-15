@@ -66,7 +66,7 @@ class AdminControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $stmtGroups = $this->createMock(\PDOStatement::class);
@@ -101,7 +101,7 @@ class AdminControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -132,7 +132,7 @@ class AdminControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -164,7 +164,7 @@ class AdminControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);

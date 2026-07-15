@@ -71,7 +71,7 @@ class AuthMiddlewareForceChangeTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 42,
-            'roles' => ['user'],
+            'role' => 'user',
             'last_password_modified' => null
         ];
 
@@ -96,7 +96,7 @@ class AuthMiddlewareForceChangeTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 42,
-            'roles' => ['user'],
+            'role' => 'user',
             'last_password_modified' => null
         ];
 

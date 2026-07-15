@@ -69,7 +69,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 10,
-            'roles' => ['user'] // Non administrative
+            'role' => 'user' // Non administrative
         ];
 
         // Mocks for settings, restrictions, my groups, workdays, etc.
@@ -137,7 +137,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 10,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -183,7 +183,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 10,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -231,7 +231,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 10,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -285,7 +285,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $this->router->method('match')->willReturnCallback(function() {
@@ -307,7 +307,7 @@ class HomeControllerGroupsTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['user']
+            'role' => 'user'
         ];
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -331,7 +331,7 @@ class HomeControllerGroupsTest extends TestCase
             'firstname' => 'Jean',
             'name' => 'Dupont',
             'username' => 'jdupont',
-            'roles' => ['user'],
+            'role' => 'user',
             'email' => 'jean@dupont.com'
         ];
         $_SESSION['test_contact_mail'] = 'admin@planning.net';

@@ -162,15 +162,9 @@
                         </td>
                         <td style="padding: 15px 20px; vertical-align: middle;">
                             <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                {% set u_roles = u.roles|json_decode %}
-                                {% for role in u_roles %}
-                                    <span class="label {% if role == 'admin' %}label-danger{% elseif role == 'responsable' %}label-primary{% elseif role == 'accueil' %}label-warning{% else %}label-success{% endif %}" style="padding: 4px 6px; font-size: 10px; text-transform: uppercase; margin-right: 3px; display: inline-block; margin-bottom: 2px;">
-                                        {{ role|replace({'admin': 'Administrateur', 'responsable': 'Responsable', 'accueil': 'Accueil', 'user': 'Bénévole'}) }}
-                                    </span>
-                                {% endfor %}
-                                {% if u_roles is empty %}
-                                    <span class="label label-success" style="padding: 4px 6px; font-size: 10px; text-transform: uppercase; display: inline-block;">Bénévole</span>
-                                {% endif %}
+                                <span class="label {% if u.role == 'admin' %}label-danger{% elseif u.role == 'responsable' %}label-primary{% elseif u.role == 'accueil' %}label-warning{% else %}label-success{% endif %}" style="padding: 4px 6px; font-size: 10px; text-transform: uppercase; display: inline-block;">
+                                    {{ u.role|replace({'admin': 'Administrateur', 'responsable': 'Responsable', 'accueil': 'Accueil', 'user': 'Bénévole'})|default('Bénévole') }}
+                                </span>
                             </div>
                         </td>
                         <td style="padding: 15px 20px; vertical-align: middle;">
@@ -414,12 +408,7 @@
         userPassword.required = false;
         passwordLabel.innerHTML = 'Mot de passe <small class="text-muted">(laisser vide si inchangé)</small>';
 
-        let rolesList = [];
-        try {
-            rolesList = JSON.parse(user.roles);
-        } catch(e) {}
-
-        const userRole = rolesList[0] || 'user';
+        const userRole = user.role || 'user';
         roleUser.checked = (userRole === 'user');
         roleAccueil.checked = (userRole === 'accueil');
         roleResponsable.checked = (userRole === 'responsable');

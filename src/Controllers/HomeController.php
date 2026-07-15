@@ -17,12 +17,8 @@ final class HomeController extends BaseController
     #[RouteAttribute(method: "GET", path: "/", name: "index")]
     public function index(): Response
     {
-        // Si l'utilisateur a uniquement le rôle 'accueil', la seule page accessible est le pointage
-        $userRoles = $_SESSION['user']['roles'] ?? [];
-        if (!is_array($userRoles)) {
-            $userRoles = json_decode($userRoles, true) ?: [];
-        }
-        if (in_array('accueil', $userRoles) && !in_array('admin', $userRoles) && !in_array('user', $userRoles) && !in_array('responsable', $userRoles)) {
+        $userRole = $_SESSION['user']['role'] ?? 'user';
+        if ($userRole === 'accueil') {
             return $this->redirect('admin.pointage');
         }
 
@@ -50,7 +46,7 @@ final class HomeController extends BaseController
         $myGroupIds = array_map('intval', $myGroupIds);
 
         // Vérifier si l'utilisateur est restreint
-        $isRestrictedUser = !array_intersect(['admin', 'responsable', 'accueil'], $userRoles);
+        $isRestrictedUser = !in_array($userRole, ['admin', 'responsable', 'accueil']);
 
         $stmtDaysCount = $pdo->prepare("SELECT value FROM settings WHERE name = 'home_days_count'");
         $stmtDaysCount->execute();
@@ -67,7 +63,7 @@ final class HomeController extends BaseController
             $dayOfWeek = (int) $date->format('N'); // 1 (lundi) à 7 (dimanche)
 
             // 1. Récupérer les services classiques (ceux dans services_workdays pour ce jour-là)
-            // SAUF s'ils sont fermés exceptionnellement (dans services_holyday)
+            // SAUF s'ils sont fermés exceptionnellement (dans services_holiday)
             $stmtClassiques = $pdo->prepare("
                 SELECT s.*, sw.start_time, sw.end_time,
                        IF(sw.start_time IS NOT NULL AND sw.end_time IS NOT NULL, CONCAT(SUBSTRING(sw.start_time, 1, 5), ' - ', SUBSTRING(sw.end_time, 1, 5)), NULL) as hours 
@@ -75,7 +71,7 @@ final class HomeController extends BaseController
                 JOIN services_workdays sw ON sw.sid = s.id
                 WHERE sw.workday = :workday
                   AND s.id NOT IN (
-                      SELECT COALESCE(sid, s.id) FROM services_holyday WHERE :date BETWEEN start_date AND end_date
+                      SELECT COALESCE(sid, s.id) FROM services_holiday WHERE :date BETWEEN start_date AND end_date
                   )
                   AND s.id NOT IN (
                       SELECT sid FROM services_opening WHERE date = :date
@@ -194,11 +190,8 @@ final class HomeController extends BaseController
         $pdo = $this->database->getConnection();
         
         // Contrôle des restrictions de groupes
-        $userRoles = $_SESSION['user']['roles'] ?? [];
-        if (!is_array($userRoles)) {
-            $userRoles = json_decode($userRoles, true) ?: [];
-        }
-        $isRestrictedUser = !array_intersect(['admin', 'responsable', 'accueil'], $userRoles);
+        $userRole = $_SESSION['user']['role'] ?? 'user';
+        $isRestrictedUser = !in_array($userRole, ['admin', 'responsable', 'accueil']);
 
         if ($isRestrictedUser) {
             // Récupérer les groupes de l'utilisateur
@@ -248,7 +241,7 @@ final class HomeController extends BaseController
             $pdo->beginTransaction();
 
             // Vérifier s'il y a un jour de fermeture (vacances/férié) configuré pour ce service ce jour-là
-            $stmtHoly = $pdo->prepare("SELECT name FROM services_holyday WHERE (sid = :sid OR sid IS NULL) AND :date BETWEEN start_date AND end_date");
+            $stmtHoly = $pdo->prepare("SELECT name FROM services_holiday WHERE (sid = :sid OR sid IS NULL) AND :date BETWEEN start_date AND end_date");
             $stmtHoly->execute(['sid' => $sid, 'date' => $dateStr]);
             if ($stmtHoly->fetch()) {
                 $errorMsg = "Ce créneau est fermé pour cause de jour férié ou de vacances.";
@@ -263,7 +256,7 @@ final class HomeController extends BaseController
 
             // 1. Chercher ou créer l'appointment
             $stmt = $pdo->prepare("
-                SELECT id FROM appoinment 
+                SELECT id FROM appointment 
                 WHERE sid = :sid AND date = :date
                   AND ((:start_time IS NULL AND start_time IS NULL) OR start_time = :start_time)
                   AND ((:end_time IS NULL AND end_time IS NULL) OR end_time = :end_time)
@@ -274,7 +267,7 @@ final class HomeController extends BaseController
             if ($appointment) {
                 $aid = $appointment['id'];
             } else {
-                $stmtInsert = $pdo->prepare("INSERT INTO appoinment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
+                $stmtInsert = $pdo->prepare("INSERT INTO appointment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
                 $stmtInsert->execute(['sid' => $sid, 'date' => $dateStr, 'start_time' => $startTime, 'end_time' => $endTime]);
                 $aid = $pdo->lastInsertId();
             }
@@ -362,7 +355,7 @@ final class HomeController extends BaseController
 
             // 1. Chercher ou créer l'appointment
             $stmt = $pdo->prepare("
-                SELECT id FROM appoinment 
+                SELECT id FROM appointment 
                 WHERE sid = :sid AND date = :date
                   AND ((:start_time IS NULL AND start_time IS NULL) OR start_time = :start_time)
                   AND ((:end_time IS NULL AND end_time IS NULL) OR end_time = :end_time)
@@ -373,7 +366,7 @@ final class HomeController extends BaseController
             if ($appointment) {
                 $aid = $appointment['id'];
             } else {
-                $stmtInsert = $pdo->prepare("INSERT INTO appoinment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
+                $stmtInsert = $pdo->prepare("INSERT INTO appointment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
                 $stmtInsert->execute(['sid' => $sid, 'date' => $dateStr, 'start_time' => $startTime, 'end_time' => $endTime]);
                 $aid = $pdo->lastInsertId();
             }
@@ -446,7 +439,7 @@ final class HomeController extends BaseController
         
         try {
             // Récupérer le sid, la date et les horaires pour la reconstruction de la card en AJAX
-            $stmtAppInfo = $pdo->prepare("SELECT sid, date, start_time, end_time FROM appoinment WHERE id = :aid");
+            $stmtAppInfo = $pdo->prepare("SELECT sid, date, start_time, end_time FROM appointment WHERE id = :aid");
             $stmtAppInfo->execute(['aid' => $aid]);
             $appInfo = $stmtAppInfo->fetch(\PDO::FETCH_ASSOC);
             
@@ -527,11 +520,8 @@ final class HomeController extends BaseController
             $dateObj = new \DateTime($dateStr);
             $dayOfWeek = (int)$dateObj->format('N');
 
-            $userRoles = $_SESSION['user']['roles'] ?? [];
-            if (!is_array($userRoles)) {
-                $userRoles = json_decode($userRoles, true) ?: [];
-            }
-            $isRestrictedUser = !array_intersect(['admin', 'responsable', 'accueil'], $userRoles);
+            $userRole = $_SESSION['user']['role'] ?? 'user';
+            $isRestrictedUser = !in_array($userRole, ['admin', 'responsable', 'accueil']);
 
             $myGroupIds = [];
             if ($isRestrictedUser) {
@@ -547,7 +537,7 @@ final class HomeController extends BaseController
                 JOIN services_workdays sw ON sw.sid = s.id
                 WHERE sw.workday = :workday
                   AND s.id NOT IN (
-                      SELECT COALESCE(sid, s.id) FROM services_holyday WHERE :date BETWEEN start_date AND end_date
+                      SELECT COALESCE(sid, s.id) FROM services_holiday WHERE :date BETWEEN start_date AND end_date
                   )
             ");
             $stmtClassiques->execute(['workday' => $dayOfWeek, 'date' => $dateStr]);
@@ -598,7 +588,7 @@ final class HomeController extends BaseController
 
                 // Trouver ou créer l'appointment
                 $stmtApp = $pdo->prepare("
-                    SELECT id FROM appoinment
+                    SELECT id FROM appointment
                     WHERE sid = :sid AND date = :date
                       AND ((:start_time IS NULL AND start_time IS NULL) OR start_time = :start_time)
                       AND ((:end_time IS NULL AND end_time IS NULL) OR end_time = :end_time)
@@ -609,7 +599,7 @@ final class HomeController extends BaseController
                 if ($appointment) {
                     $aid = $appointment['id'];
                 } else {
-                    $stmtIns = $pdo->prepare("INSERT INTO appoinment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
+                    $stmtIns = $pdo->prepare("INSERT INTO appointment (sid, date, start_time, end_time) VALUES (:sid, :date, :start_time, :end_time)");
                     $stmtIns->execute(['sid' => $csid, 'date' => $dateStr, 'start_time' => $creneau['start_time'] ?? null, 'end_time' => $creneau['end_time'] ?? null]);
                     $aid = $pdo->lastInsertId();
                 }
@@ -677,7 +667,7 @@ final class HomeController extends BaseController
         
         // 1. Chercher si c'est une ouverture exceptionnelle
         $stmtOpening = $pdo->prepare("
-            SELECT start_time, end_time,
+            SELECT id, start_time, end_time,
                    IF(start_time IS NOT NULL AND end_time IS NOT NULL, CONCAT(SUBSTRING(start_time, 1, 5), ' - ', SUBSTRING(end_time, 1, 5)), NULL) as hours,
                    description 
             FROM services_opening 
@@ -719,20 +709,20 @@ final class HomeController extends BaseController
         }
         
         $stmtHoly = $pdo->prepare("
-            SELECT name FROM services_holyday WHERE (sid = :sid OR sid IS NULL) AND :date BETWEEN start_date AND end_date
+            SELECT name FROM services_holiday WHERE (sid = :sid OR sid IS NULL) AND :date BETWEEN start_date AND end_date
         ");
         $stmtHoly->execute(['sid' => $sid, 'date' => $dateStr]);
-        $holyday = $stmtHoly->fetch(\PDO::FETCH_ASSOC);
+        $holiday = $stmtHoly->fetch(\PDO::FETCH_ASSOC);
 
         $ferme = false;
         $raisonFermeture = null;
-        if ($holyday) {
+        if ($holiday) {
             $ferme = true;
-            $raisonFermeture = $holyday['name'];
+            $raisonFermeture = $holiday['name'];
         }
 
         $stmtApp = $pdo->prepare("
-            SELECT * FROM appoinment 
+            SELECT * FROM appointment 
             WHERE sid = :sid AND date = :date
               AND ((:start_time IS NULL AND start_time IS NULL) OR start_time = :start_time)
               AND ((:end_time IS NULL AND end_time IS NULL) OR end_time = :end_time)

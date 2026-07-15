@@ -40,7 +40,7 @@ class AdminDashboardController extends BaseController
         }
 
         // 2. Récupérer tous les utilisateurs pour l'export RGPD
-        $stmtUsers = $pdo->query("SELECT id, firstname, name, username, roles FROM users ORDER BY name ASC, firstname ASC");
+        $stmtUsers = $pdo->query("SELECT id, firstname, name, username, role FROM users ORDER BY name ASC, firstname ASC");
         $users = $stmtUsers->fetchAll(\PDO::FETCH_ASSOC);
 
         // 3. Lire les logs de l'application
@@ -162,7 +162,7 @@ class AdminDashboardController extends BaseController
         $pdo = $this->database->getConnection();
 
         // 1. Charger le profil de l'utilisateur
-        $stmtUser = $pdo->prepare("SELECT id, firstname, name, username, roles, lastModifiedPassword FROM users WHERE id = :id");
+        $stmtUser = $pdo->prepare("SELECT id, firstname, name, username, role, lastModifiedPassword FROM users WHERE id = :id");
         $stmtUser->execute(['id' => $uid]);
         $user = $stmtUser->fetch(\PDO::FETCH_ASSOC);
 
@@ -171,8 +171,8 @@ class AdminDashboardController extends BaseController
             return $this->redirect('admin.dashboard');
         }
 
-        // Décoder les rôles pour la lisibilité
-        $user['roles'] = json_decode($user['roles'] ?? '[]', true) ?: [];
+        // Utiliser le rôle
+        $user['role'] = $user['role'] ?? 'user';
 
         // Charger les groupes de l'utilisateur
         $stmtGroups = $pdo->prepare("
@@ -188,7 +188,7 @@ class AdminDashboardController extends BaseController
         $stmtAppointments = $pdo->prepare("
             SELECT a.date, s.name as service_name, sw.hours as service_hours, au.presence 
             FROM appointments_users au
-            JOIN appoinment a ON a.id = au.aid
+            JOIN appointment a ON a.id = au.aid
             JOIN services s ON s.id = a.sid
             LEFT JOIN services_workdays sw ON sw.sid = s.id AND sw.workday = STR_TO_DATE(a.date, '%Y-%m-%d')
             WHERE au.uid = :uid

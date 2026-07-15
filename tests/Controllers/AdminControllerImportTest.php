@@ -64,7 +64,7 @@ class AdminControllerImportTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         // Créer un fichier CSV temporaire
@@ -111,11 +111,11 @@ class AdminControllerImportTest extends TestCase
     {
         $_SESSION['user'] = [
             'id' => 1,
-            'roles' => ['responsable']
+            'role' => 'responsable'
         ];
 
         // Header sans 'name' ou 'firstname'
-        $csvContent = "email;phone;roles\n";
+        $csvContent = "email;phone;role\n";
         $csvContent .= "paul@test.com;0601020304;user\n";
         $tempFile = tempnam(sys_get_temp_dir(), 'csv');
         file_put_contents($tempFile, $csvContent);

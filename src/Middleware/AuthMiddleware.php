@@ -71,18 +71,18 @@ class AuthMiddleware implements MiddlewareInterface
         }
 
         $user = $_SESSION['user'];
-        $roles = is_array($user['roles'] ?? null) ? $user['roles'] : (json_decode($user['roles'] ?? '[]', true) ?: []);
+        $role = $user['role'] ?? 'user';
 
         if ($this->role !== null) {
             $allowedRoles = array_map('trim', explode(',', $this->role));
             $authorized = false;
             foreach ($allowedRoles as $allowedRole) {
-                if (in_array($allowedRole, $roles)) {
+                if ($role === $allowedRole) {
                     $authorized = true;
                     break;
                 }
             }
-            if (in_array('admin', $roles)) {
+            if ($role === 'admin') {
                 $authorized = true;
             }
 

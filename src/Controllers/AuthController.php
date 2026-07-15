@@ -41,9 +41,9 @@ final class AuthController extends BaseController
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password'])) {
-            $roles = json_decode($user['roles'] ?? '[]', true) ?: [];
+            $role = $user['role'] ?? 'user';
             $rssToken = null;
-            if (in_array('admin', $roles)) {
+            if ($role === 'admin') {
                 $stmtToken = $this->database->getConnection()->prepare("SELECT value FROM settings WHERE name = 'rss_token'");
                 $stmtToken->execute();
                 $rssToken = $stmtToken->fetch(\PDO::FETCH_COLUMN) ?: 'init_token_abc123';
@@ -54,7 +54,7 @@ final class AuthController extends BaseController
                 'name' => $user['name'],
                 'firstname' => $user['firstname'],
                 'username' => $user['username'],
-                'roles' => $roles,
+                'role' => $role,
                 'rss_token' => $rssToken,
                 'last_password_modified' => $user['lastModifiedPassword']
             ];
@@ -154,9 +154,9 @@ final class AuthController extends BaseController
                 $user = $stmtUser->fetch(\PDO::FETCH_ASSOC);
 
                 if ($user) {
-                    $roles = json_decode($user['roles'] ?? '[]', true) ?: [];
+                    $role = $user['role'] ?? 'user';
                     $rssToken = null;
-                    if (in_array('admin', $roles)) {
+                    if ($role === 'admin') {
                         $stmtToken = $pdo->prepare("SELECT value FROM settings WHERE name = 'rss_token'");
                         $stmtToken->execute();
                         $rssToken = $stmtToken->fetch(\PDO::FETCH_COLUMN) ?: 'init_token_abc123';
@@ -167,7 +167,7 @@ final class AuthController extends BaseController
                         'name' => $user['name'],
                         'firstname' => $user['firstname'],
                         'username' => $user['username'],
-                        'roles' => $roles,
+                        'role' => $role,
                         'rss_token' => $rssToken,
                         'last_password_modified' => $user['lastModifiedPassword']
                     ];

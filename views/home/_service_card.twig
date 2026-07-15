@@ -57,7 +57,7 @@
                     <p class="text-muted" style="font-size: 13px; font-style: italic; margin-bottom: 0;">Aucun bénévole inscrit.</p>
                 {% else %}
                     <div style="display: flex; flex-wrap: wrap; gap: 5px; max-height: 80px; overflow-y: auto;">
-                        {% set estEncadrant = 'admin' in app_user.roles or 'responsable' in app_user.roles or 'accueil' in app_user.roles %}
+                        {% set estEncadrant = app_user.role in ['admin', 'responsable', 'accueil'] %}
                         {% for inscrit in service.inscrits %}
                             {% if inscrit.presence == 'absent' and inscrit.pointed == 0 %}
                                 {# Déclaré absent à l'avance (toujours public) #}

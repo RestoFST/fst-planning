@@ -30,7 +30,7 @@ final class AdminController extends BaseController
             // Récupérer le dernier pointage (présent ou absent)
             $stmtPointage = $pdo->prepare("
                 SELECT a.date, au.presence FROM appointments_users au 
-                JOIN appoinment a ON a.id = au.aid 
+                JOIN appointment a ON a.id = au.aid 
                 WHERE au.uid = :uid AND au.presence != 'en_attente' 
                 ORDER BY a.date DESC LIMIT 1
             ");
@@ -84,8 +84,8 @@ final class AdminController extends BaseController
             return $this->redirect('admin.users');
         }
 
-        // Encoder les rôles sous forme de JSON
-        $rolesJson = json_encode([$roleInput]);
+        // Utiliser directement la chaîne de caractères
+        $role = $roleInput;
 
         $pdo = $this->database->getConnection();
         try {
@@ -103,15 +103,15 @@ final class AdminController extends BaseController
             $passHash = password_hash($password, PASSWORD_DEFAULT);
 
             $stmt = $pdo->prepare("
-                INSERT INTO users (name, firstname, username, password, roles, lastModifiedPassword)
-                VALUES (:name, :firstname, :username, :password, :roles, NULL)
+                INSERT INTO users (name, firstname, username, password, role, lastModifiedPassword)
+                VALUES (:name, :firstname, :username, :password, :role, NULL)
             ");
             $stmt->execute([
                 'name' => $name,
                 'firstname' => $firstname,
                 'username' => $username,
                 'password' => $passHash,
-                'roles' => $rolesJson
+                'role' => $role
             ]);
             $uid = $pdo->lastInsertId();
 
@@ -240,7 +240,7 @@ final class AdminController extends BaseController
 
                 // Mot de passe initial est égal au username
                 $passHash = password_hash($username, PASSWORD_BCRYPT);
-                $rolesJson = json_encode(['user']);
+                $role = 'user';
 
                 // Vérifier si le username existe déjà
                 $stmtCheck = $pdo->prepare("SELECT id FROM users WHERE username = :username");
@@ -253,15 +253,15 @@ final class AdminController extends BaseController
 
                 // Insérer le nouvel utilisateur (lastModifiedPassword à NULL)
                 $stmtInsert = $pdo->prepare("
-                    INSERT INTO users (name, firstname, username, password, roles, lastModifiedPassword) 
-                    VALUES (:name, :firstname, :username, :password, :roles, NULL)
+                    INSERT INTO users (name, firstname, username, password, role, lastModifiedPassword) 
+                    VALUES (:name, :firstname, :username, :password, :role, NULL)
                 ");
                 $stmtInsert->execute([
                     'name' => $name,
                     'firstname' => $firstname,
                     'username' => $username,
                     'password' => $passHash,
-                    'roles' => $rolesJson
+                    'role' => $role
                 ]);
 
                 $importedCount++;
@@ -296,7 +296,7 @@ final class AdminController extends BaseController
             return $this->redirect('admin.users');
         }
 
-        $rolesJson = json_encode([$roleInput]);
+        $role = $roleInput;
         $pdo = $this->database->getConnection();
 
         try {
@@ -317,7 +317,7 @@ final class AdminController extends BaseController
                 $stmt = $pdo->prepare("
                     UPDATE users 
                     SET name = :name, firstname = :firstname, username = :username, 
-                        password = :password, roles = :roles,
+                        password = :password, role = :role,
                         lastModifiedPassword = NULL
                     WHERE id = :id
                 ");
@@ -327,14 +327,14 @@ final class AdminController extends BaseController
                     'firstname' => $firstname,
                     'username' => $username,
                     'password' => $passHash,
-                    'roles' => $rolesJson
+                    'role' => $role
                 ]);
             } else {
                 // Mettre à jour sans changer le mot de passe
                 $stmt = $pdo->prepare("
                     UPDATE users 
                     SET name = :name, firstname = :firstname, username = :username, 
-                        roles = :roles
+                        role = :role
                     WHERE id = :id
                 ");
                 $stmt->execute([
@@ -342,7 +342,7 @@ final class AdminController extends BaseController
                     'name' => $name,
                     'firstname' => $firstname,
                     'username' => $username,
-                    'roles' => $rolesJson
+                    'role' => $role
                 ]);
             }
 
@@ -360,7 +360,7 @@ final class AdminController extends BaseController
                 $_SESSION['user']['name'] = $name;
                 $_SESSION['user']['firstname'] = $firstname;
                 $_SESSION['user']['username'] = $username;
-                $_SESSION['user']['roles'] = json_decode($rolesJson, true) ?: [];
+                $_SESSION['user']['role'] = $role;
             }
 
             $pdo->commit();
@@ -433,16 +433,16 @@ final class AdminController extends BaseController
 
         $pdo = $this->database->getConnection();
 
-        // Proactivement initialiser les créneaux (appoinment) programmés pour ce jour
+        // Proactivement initialiser les créneaux (appointment) programmés pour ce jour
         // 1. Récupérer les services classiques programmés pour ce jour de la semaine
-        // SAUF s'ils sont fermés exceptionnellement (dans services_holyday)
+        // SAUF s'ils sont fermés exceptionnellement (dans services_holiday)
         $stmtClassiques = $pdo->prepare("
             SELECT s.id as sid, sw.start_time, sw.end_time
             FROM services s
             JOIN services_workdays sw ON sw.sid = s.id
             WHERE sw.workday = :workday
               AND s.id NOT IN (
-                  SELECT COALESCE(sid, s.id) FROM services_holyday WHERE :date BETWEEN start_date AND end_date
+                  SELECT COALESCE(sid, s.id) FROM services_holiday WHERE :date BETWEEN start_date AND end_date
               )
               AND s.id NOT IN (
                   SELECT sid FROM services_opening WHERE date = :date
@@ -472,10 +472,10 @@ final class AdminController extends BaseController
             $allActive[$key] = $s;
         }
 
-        // Créer l'entrée dans la table `appoinment` si elle n'existe pas
+        // Créer l'entrée dans la table `appointment` si elle n'existe pas
         foreach ($allActive as $s) {
             $stmtCheck = $pdo->prepare("
-                SELECT id FROM appoinment 
+                SELECT id FROM appointment 
                 WHERE sid = :sid AND date = :date 
                   AND ((start_time IS NULL AND :start_time IS NULL) OR start_time = :start_time)
                   AND ((end_time IS NULL AND :end_time IS NULL) OR end_time = :end_time)
@@ -488,7 +488,7 @@ final class AdminController extends BaseController
             ]);
             if (!$stmtCheck->fetch()) {
                 $stmtInsert = $pdo->prepare("
-                    INSERT INTO appoinment (sid, date, start_time, end_time) 
+                    INSERT INTO appointment (sid, date, start_time, end_time) 
                     VALUES (:sid, :date, :start_time, :end_time)
                 ");
                 $stmtInsert->execute([
@@ -504,7 +504,7 @@ final class AdminController extends BaseController
         $stmt = $pdo->prepare("
             SELECT a.id as aid, s.name as service_name, 
                    IF(a.start_time IS NOT NULL AND a.end_time IS NOT NULL, CONCAT(SUBSTRING(a.start_time, 1, 5), ' - ', SUBSTRING(a.end_time, 1, 5)), NULL) as hours 
-            FROM appoinment a
+            FROM appointment a
             JOIN services s ON s.id = a.sid
             WHERE a.date = :date
             ORDER BY a.start_time ASC
@@ -532,11 +532,11 @@ final class AdminController extends BaseController
         }
 
         // Récupérer tous les utilisateurs (en excluant le rôle accueil) pour l'inscription à la volée
-        $stmtUsers = $pdo->query("SELECT id, firstname, name, roles FROM users ORDER BY name ASC, firstname ASC");
+        $stmtUsers = $pdo->query("SELECT id, firstname, name, role FROM users ORDER BY name ASC, firstname ASC");
         $allUsers = [];
         foreach ($stmtUsers->fetchAll(\PDO::FETCH_ASSOC) as $u) {
-            $roles = json_decode($u['roles'] ?? '[]', true) ?: [];
-            if (!in_array('accueil', $roles)) {
+            $role = $u['role'] ?? 'user';
+            if ($role !== 'accueil') {
                 $allUsers[] = [
                     'id' => $u['id'],
                     'firstname' => $u['firstname'],
@@ -915,7 +915,7 @@ final class AdminController extends BaseController
                 $today = date('Y-m-d');
                 $stmtApps = $pdo->prepare("
                     SELECT id, date, start_time, end_time 
-                    FROM appoinment 
+                    FROM appointment 
                     WHERE sid = :sid AND date >= :today
                     ORDER BY date ASC, start_time ASC
                 ");
@@ -929,7 +929,7 @@ final class AdminController extends BaseController
                 }
 
                 $stmtUpdateApp = $pdo->prepare("
-                    UPDATE appoinment 
+                    UPDATE appointment 
                     SET start_time = :start_time, end_time = :end_time 
                     WHERE id = :id
                 ");
@@ -981,7 +981,7 @@ final class AdminController extends BaseController
             $pdo->beginTransaction();
 
             // 1. Trouver les créneaux/rendez-vous liés
-            $stmtApps = $pdo->prepare("SELECT id FROM appoinment WHERE sid = :sid");
+            $stmtApps = $pdo->prepare("SELECT id FROM appointment WHERE sid = :sid");
             $stmtApps->execute(['sid' => $id]);
             $appointments = $stmtApps->fetchAll(\PDO::FETCH_COLUMN);
 
@@ -992,7 +992,7 @@ final class AdminController extends BaseController
                 $stmtDelAssoc->execute($appointments);
 
                 // 3. Supprimer les créneaux liés
-                $stmtDelApps = $pdo->prepare("DELETE FROM appoinment WHERE sid = :sid");
+                $stmtDelApps = $pdo->prepare("DELETE FROM appointment WHERE sid = :sid");
                 $stmtDelApps->execute(['sid' => $id]);
             }
 
@@ -1026,7 +1026,7 @@ final class AdminController extends BaseController
         // Récupérer toutes les fermetures
         $stmt = $pdo->query("
             SELECT sh.*, s.name as service_name, (sh.end_date < CURRENT_DATE()) as is_past 
-            FROM services_holyday sh
+            FROM services_holiday sh
             LEFT JOIN services s ON s.id = sh.sid
             ORDER BY sh.start_date ASC, s.name ASC
         ");
@@ -1079,7 +1079,7 @@ final class AdminController extends BaseController
             if ($sid === null) {
                 // Fermeture globale du centre : on cherche si le centre est déjà fermé sur ces dates
                 $stmtCheck = $pdo->prepare("
-                    SELECT id FROM services_holyday 
+                    SELECT id FROM services_holiday 
                     WHERE sid IS NULL 
                       AND (start_date <= :end_date AND end_date >= :start_date)
                 ");
@@ -1090,7 +1090,7 @@ final class AdminController extends BaseController
             } else {
                 // Fermeture d'un service : on cherche si le service ou le centre est fermé sur ces dates
                 $stmtCheck = $pdo->prepare("
-                    SELECT id FROM services_holyday 
+                    SELECT id FROM services_holiday 
                     WHERE (sid = :sid OR sid IS NULL) 
                       AND (start_date <= :end_date AND end_date >= :start_date)
                 ");
@@ -1109,7 +1109,7 @@ final class AdminController extends BaseController
 
             // 2. Insérer la plage de fermeture
             $stmtInsert = $pdo->prepare("
-                INSERT INTO services_holyday (sid, start_date, end_date, name) 
+                INSERT INTO services_holiday (sid, start_date, end_date, name) 
                 VALUES (:sid, :start_date, :end_date, :name)
             ");
             $stmtInsert->execute([
@@ -1123,7 +1123,7 @@ final class AdminController extends BaseController
             if ($sid === null) {
                 // Fermeture globale : on supprime les créneaux de tous les services dans cette plage
                 $stmtApps = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE date BETWEEN :start_date AND :end_date
                 ");
                 $stmtApps->execute([
@@ -1133,7 +1133,7 @@ final class AdminController extends BaseController
             } else {
                 // Fermeture de service : on supprime uniquement pour ce service
                 $stmtApps = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE sid = :sid 
                       AND date BETWEEN :start_date AND :end_date
                 ");
@@ -1154,7 +1154,7 @@ final class AdminController extends BaseController
                 $stmtDelInscrits->execute($aids);
                 
                 // Supprimer les créneaux
-                $stmtDelApps = $pdo->prepare("DELETE FROM appoinment WHERE id IN ($placeholders)");
+                $stmtDelApps = $pdo->prepare("DELETE FROM appointment WHERE id IN ($placeholders)");
                 $stmtDelApps->execute($aids);
             }
 
@@ -1201,7 +1201,7 @@ final class AdminController extends BaseController
             // 1. Vérifier si une autre fermeture chevauche déjà celle-ci (en excluant l'ID courant)
             if ($sid === null) {
                 $stmtCheck = $pdo->prepare("
-                    SELECT id FROM services_holyday 
+                    SELECT id FROM services_holiday 
                     WHERE sid IS NULL AND id != :id
                       AND (start_date <= :end_date AND end_date >= :start_date)
                 ");
@@ -1212,7 +1212,7 @@ final class AdminController extends BaseController
                 ]);
             } else {
                 $stmtCheck = $pdo->prepare("
-                    SELECT id FROM services_holyday 
+                    SELECT id FROM services_holiday 
                     WHERE (sid = :sid OR sid IS NULL) AND id != :id
                       AND (start_date <= :end_date AND end_date >= :start_date)
                 ");
@@ -1232,7 +1232,7 @@ final class AdminController extends BaseController
 
             // 2. Mettre à jour la fermeture
             $stmtUpdate = $pdo->prepare("
-                UPDATE services_holyday 
+                UPDATE services_holiday 
                 SET sid = :sid, start_date = :start_date, end_date = :end_date, name = :name 
                 WHERE id = :id
             ");
@@ -1247,7 +1247,7 @@ final class AdminController extends BaseController
             // 3. Supprimer en cascade les inscriptions existantes tombant dans la nouvelle plage
             if ($sid === null) {
                 $stmtApps = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE date BETWEEN :start_date AND :end_date
                 ");
                 $stmtApps->execute([
@@ -1256,7 +1256,7 @@ final class AdminController extends BaseController
                 ]);
             } else {
                 $stmtApps = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE sid = :sid 
                       AND date BETWEEN :start_date AND :end_date
                 ");
@@ -1277,7 +1277,7 @@ final class AdminController extends BaseController
                 $stmtDelInscrits->execute($aids);
                 
                 // Supprimer les créneaux
-                $stmtDelApps = $pdo->prepare("DELETE FROM appoinment WHERE id IN ($placeholders)");
+                $stmtDelApps = $pdo->prepare("DELETE FROM appointment WHERE id IN ($placeholders)");
                 $stmtDelApps->execute($aids);
             }
 
@@ -1308,7 +1308,7 @@ final class AdminController extends BaseController
 
         try {
             $stmt = $this->database->getConnection()->prepare("
-                DELETE FROM services_holyday WHERE id = :id
+                DELETE FROM services_holiday WHERE id = :id
             ");
             $stmt->execute(['id' => $id]);
             Logger::warning("Suppression d'une fermeture planifiée", ['admin_uid' => $_SESSION['user']['id']]);
@@ -1427,7 +1427,7 @@ final class AdminController extends BaseController
             // on le met à jour avec les nouveaux horaires exceptionnels de l'ouverture
             if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
                 $stmtFindApp = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE sid = :sid AND date = :date
                       AND (
                         (start_time IS NULL OR end_time IS NULL)
@@ -1448,7 +1448,7 @@ final class AdminController extends BaseController
 
                 if ($appRow) {
                     $stmtUpdateApp = $pdo->prepare("
-                        UPDATE appoinment 
+                        UPDATE appointment 
                         SET start_time = :start_time, end_time = :end_time 
                         WHERE id = :id
                     ");
@@ -1560,7 +1560,7 @@ final class AdminController extends BaseController
             // on le met à jour avec les nouveaux horaires exceptionnels de l'ouverture
             if (!defined('PHPUNIT_COMPOSER_INSTALL') && !defined('__PHPUNIT_PHAR__')) {
                 $stmtUpdateApp = $pdo->prepare("
-                    UPDATE appoinment 
+                    UPDATE appointment 
                     SET start_time = :start_time, end_time = :end_time 
                     WHERE sid = :sid AND date = :date
                 ");
@@ -1603,7 +1603,7 @@ final class AdminController extends BaseController
             // 4. Mettre à jour le créneau futur correspondant (appoinment) s'il existe
             if ($original && $original['date'] >= date('Y-m-d')) {
                 $stmtFindApp = $pdo->prepare("
-                    SELECT id FROM appoinment 
+                    SELECT id FROM appointment 
                     WHERE sid = :sid AND date = :date 
                       AND ((start_time IS NULL AND :orig_start IS NULL) OR start_time = :orig_start)
                       AND ((end_time IS NULL AND :orig_end IS NULL) OR end_time = :orig_end)
@@ -1618,7 +1618,7 @@ final class AdminController extends BaseController
                 
                 if ($appRow) {
                     $stmtUpdateApp = $pdo->prepare("
-                        UPDATE appoinment 
+                        UPDATE appointment 
                         SET sid = :new_sid, date = :new_date, start_time = :new_start, end_time = :new_end 
                         WHERE id = :id
                     ");
@@ -1672,9 +1672,9 @@ final class AdminController extends BaseController
                     $hoursStr = substr($op['start_time'], 0, 5) . ' - ' . substr($op['end_time'], 0, 5);
                 }
                 
-                // 2. Supprimer le appoinment correspondant
+                // 2. Supprimer le appointment correspondant
                 $stmtDelApp = $pdo->prepare("
-                    DELETE FROM appoinment 
+                    DELETE FROM appointment 
                     WHERE sid = :sid AND date = :date
                       AND ((:start_time IS NULL AND start_time IS NULL) OR start_time = :start_time)
                       AND ((:end_time IS NULL AND end_time IS NULL) OR end_time = :end_time)
@@ -1714,10 +1714,10 @@ final class AdminController extends BaseController
         $dateFin = $queryParams['date_fin'] ?? '';
 
         $currentUser = $_SESSION['user'] ?? [];
-        $currentUserRoles = $currentUser['roles'] ?? [];
+        $currentUserRole = $currentUser['role'] ?? 'user';
 
         // Si l'utilisateur est un simple bénévole, on le force à ne voir que ses propres infos
-        $isSimpleUser = !in_array('admin', $currentUserRoles) && !in_array('responsable', $currentUserRoles);
+        $isSimpleUser = !in_array($currentUserRole, ['admin', 'responsable']);
         if ($isSimpleUser) {
             $selectedUid = (string)$currentUser['id'];
         }
@@ -1755,7 +1755,7 @@ final class AdminController extends BaseController
         $sql = "
             SELECT a.date, s.name as service_name, u.name as user_name, u.firstname as user_firstname, au.presence 
             FROM appointments_users au 
-            JOIN appoinment a ON a.id = au.aid 
+            JOIN appointment a ON a.id = au.aid 
             JOIN services s ON s.id = a.sid 
             JOIN users u ON u.id = au.uid 
             $whereClause
@@ -1796,10 +1796,10 @@ final class AdminController extends BaseController
         $dateFin = $queryParams['date_fin'] ?? '';
 
         $currentUser = $_SESSION['user'] ?? [];
-        $currentUserRoles = $currentUser['roles'] ?? [];
+        $currentUserRole = $currentUser['role'] ?? 'user';
 
         // Si l'utilisateur est un simple bénévole, on le force à ne voir que ses propres infos
-        $isSimpleUser = !in_array('admin', $currentUserRoles) && !in_array('responsable', $currentUserRoles);
+        $isSimpleUser = !in_array($currentUserRole, ['admin', 'responsable']);
         if ($isSimpleUser) {
             $selectedUid = (string)$currentUser['id'];
         }
@@ -1840,7 +1840,7 @@ final class AdminController extends BaseController
         $sql = "
             SELECT a.date, s.name as service_name, u.name as user_name, u.firstname as user_firstname, au.presence 
             FROM appointments_users au 
-            JOIN appoinment a ON a.id = au.aid 
+            JOIN appointment a ON a.id = au.aid 
             JOIN services s ON s.id = a.sid 
             JOIN users u ON u.id = au.uid 
             $whereClause
